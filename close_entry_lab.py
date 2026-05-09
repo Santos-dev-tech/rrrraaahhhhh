@@ -1,0 +1,258 @@
+"""
+Close-Entry Strategy Lab
+Anchor: 13:00 UTC
+Change: Entry price is now the CLOSE of the break candle, not the high/low of the anchor candle.
+"""
+import sys, io
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+
+import MetaTrader5 as mt5
+import pandas as pd
+import numpy as np
+from datetime import datetime, timedelta
+
+# ── CONFIG ──
+SYMBOL = "XAUUSDm"
+ANCHOR_TIME = "13:00"
+SL_BUFFER = 0.50
+EOD_CLOSE_HOUR = 21
+RISK_PER_TRADE = 30
+POINT_VALUE = 100
+
+def get_nfp_weeks(start_year, end_year):
+    nfp_weeks = set()
+    for year in range(start_year, end_year + 1):
+        for month in range(1, 13):
+            first_day = datetime(year, month, 1)
+            days_until_friday = (4 - first_day.weekday()) % 7
+            first_friday = first_day + timedelta(days=days_until_friday)
+            monday = first_friday - timedelta(days=first_friday.weekday())
+            for d in range(5):
+                nfp_weeks.add((monday + timedelta(days=d)).date())
+    return nfp_weeks
+
+def is_valid_day(dt, nfp_weeks, day_filter=None):
+    day = dt.weekday()
+    date = dt.date()
+    if day == 0: return False  # skip Monday
+    if day_filter and dt.day_name() not in day_filter:
+        return False
+    if date in nfp_weeks:
+        return day == 1
+    return True
+
+def run_variant(df, nfp_weeks, rr_ratio=3.0, trailing_be=False, partial_tp_at=0, 
+                long_only=False, short_only=False, max_risk=999, min_risk=0,
+                day_filter=None, label=""):
+    hour, minute = 13, 0
+    trades = []
+    df['date'] = df['time'].dt.date
+    dates = df['date'].unique()
+    
+    for date in dates:
+        day_data = df[df['date'] == date].copy()
+        if day_data.empty: continue
+        sample_dt = day_data.iloc[0]['time']
+        if not is_valid_day(sample_dt, nfp_weeks, day_filter): continue
+        
+        anchor_mask = (day_data['time'].dt.hour == hour) & (day_data['time'].dt.minute == minute)
+        anchor_candles = day_data[anchor_mask]
+        if anchor_candles.empty: continue
+        
+        anchor = anchor_candles.iloc[0]
+        anchor_idx = day_data.index.get_loc(anchor.name)
+        anchor_high = anchor['high']
+        anchor_low = anchor['low']
+        
+        remaining = day_data.iloc[anchor_idx + 1:]
+        if len(remaining) < 2: continue
+        next_two = remaining.iloc[:2]
+        
+        direction = None
+        break_candle = None
+        for _, candle in next_two.iterrows():
+            broke_high = candle['high'] > anchor_high
+            broke_low = candle['low'] < anchor_low
+            if broke_high and broke_low:
+                direction = 'long' if candle['close'] >= candle['open'] else 'short'
+                break_candle = candle; break
+            elif broke_high:
+                direction = 'long'; break_candle = candle; break
+            elif broke_low:
+                direction = 'short'; break_candle = candle; break
+        
+        if direction is None: continue
+        if long_only and direction == 'short': continue
+        if short_only and direction == 'long': continue
+        
+        # CHANGED: Entry is now the CLOSE of the break_candle
+        if direction == 'long':
+            entry = break_candle['close']
+            sl = break_candle['low'] - SL_BUFFER
+            risk = entry - sl
+            if risk <= 0: continue
+            tp = entry + (risk * rr_ratio)
+        else:
+            entry = break_candle['close']
+            sl = break_candle['high'] + SL_BUFFER
+            risk = sl - entry
+            if risk <= 0: continue
+            tp = entry - (risk * rr_ratio)
+        
+        if risk > max_risk or risk < min_risk: continue
+        
+        forward_all = df[df.index > break_candle.name]
+        outcome = 'open'
+        exit_price = None
+        current_sl = sl
+        partial_closed = False
+        partial_pnl = 0
+        lot_size = RISK_PER_TRADE / (risk * POINT_VALUE)
+        remaining_lots = lot_size
+        be_activated = False
+        
+        for _, fcandle in forward_all.iterrows():
+            if fcandle['time'].hour >= EOD_CLOSE_HOUR and fcandle['time'].date() == date:
+                outcome = 'eod_close'
+                exit_price = fcandle['close']
+                break
+            
+            if direction == 'long':
+                if trailing_be and not be_activated:
+                    if fcandle['high'] >= entry + risk:
+                        current_sl = entry
+                        be_activated = True
+                
+                if partial_tp_at > 0 and not partial_closed:
+                    if fcandle['high'] >= entry + (risk * partial_tp_at):
+                        half_lots = lot_size / 2
+                        partial_pnl = (risk * partial_tp_at) * POINT_VALUE * half_lots
+                        remaining_lots = half_lots
+                        partial_closed = True
+                        current_sl = entry
+                
+                if fcandle['low'] <= current_sl:
+                    outcome = 'sl'
+                    exit_price = current_sl
+                    break
+                if fcandle['high'] >= tp:
+                    outcome = 'tp'
+                    exit_price = tp
+                    break
+            else:
+                if trailing_be and not be_activated:
+                    if fcandle['low'] <= entry - risk:
+                        current_sl = entry
+                        be_activated = True
+                
+                if partial_tp_at > 0 and not partial_closed:
+                    if fcandle['low'] <= entry - (risk * partial_tp_at):
+                        half_lots = lot_size / 2
+                        partial_pnl = (risk * partial_tp_at) * POINT_VALUE * half_lots
+                        remaining_lots = half_lots
+                        partial_closed = True
+                        current_sl = entry
+                
+                if fcandle['high'] >= current_sl:
+                    outcome = 'sl'
+                    exit_price = current_sl
+                    break
+                if fcandle['low'] <= tp:
+                    outcome = 'tp'
+                    exit_price = tp
+                    break
+        
+        if outcome == 'open': continue
+        
+        if direction == 'long':
+            main_pnl = (exit_price - entry) * POINT_VALUE * remaining_lots
+        else:
+            main_pnl = (entry - exit_price) * POINT_VALUE * remaining_lots
+        
+        total_pnl = main_pnl + partial_pnl
+        
+        trades.append({
+            'date': str(date),
+            'direction': direction,
+            'entry': entry, 'sl': sl, 'tp': tp,
+            'exit_price': exit_price,
+            'pnl': round(total_pnl, 2),
+            'outcome': outcome,
+            'risk': risk,
+            'be_activated': be_activated if trailing_be else None,
+            'partial_closed': partial_closed if partial_tp_at > 0 else None,
+        })
+    
+    return trades
+
+def summarize(trades, label):
+    if not trades:
+        return None
+    df = pd.DataFrame(trades)
+    t = len(df); w = len(df[df['outcome'] == 'tp'])
+    wr = w / t * 100
+    pnl = df['pnl'].sum()
+    gp = df[df['pnl'] > 0]['pnl'].sum()
+    gl = abs(df[df['pnl'] < 0]['pnl'].sum())
+    pf = gp / gl if gl > 0 else 999
+    cum = df['pnl'].cumsum()
+    dd = (cum.cummax() - cum).max()
+    return {'label': label, 't': t, 'wr': wr, 'pnl': pnl, 'pf': pf, 'dd': dd, 'pt': pnl/t}
+
+def print_row(s):
+    if s is None: return
+    print(f"  {s['label']:<45} {s['t']:>4}t {s['wr']:>5.1f}% ${s['pnl']:>8.0f}  PF={s['pf']:>5.2f}  DD=${s['dd']:>5.0f}  $/t=${s['pt']:>5.1f}")
+
+print("Connecting to MT5...")
+if not mt5.initialize():
+    print(f"MT5 failed: {mt5.last_error()}")
+    sys.exit(1)
+
+symbol_name = SYMBOL
+if mt5.symbol_info(SYMBOL) is None:
+    for alt in ["XAUUSD", "XAUUSDm", "GOLD", "GOLDm"]:
+        if mt5.symbol_info(alt):
+            symbol_name = alt; break
+
+mt5.symbol_select(symbol_name, True)
+rates = mt5.copy_rates_from_pos(symbol_name, mt5.TIMEFRAME_M5, 0, 100000)
+mt5.shutdown()
+
+if rates is None or len(rates) == 0:
+    print("No data!"); sys.exit(1)
+
+df = pd.DataFrame(rates)
+df['time'] = pd.to_datetime(df['time'], unit='s')
+nfp_weeks = get_nfp_weeks(df['time'].min().year, df['time'].max().year)
+
+header = f"\n{'':>47} {'TR':>4}  {'WR':>5}  {'P&L':>9}  {'PF':>8}  {'MaxDD':>8}  {'$/trade':>9}"
+divider = "-" * 105
+
+print("\n" + "=" * 105)
+print("  CLOSE-ENTRY STRATEGY LAB (Entry exactly at close of break candle)")
+print("=" * 105)
+print(header)
+print(divider)
+
+combos = [
+    ("BASELINE 1:3 RR (Close Entry)", {}),
+    ("1:3 RR + Risk <= 4.0", dict(max_risk=4.0)),
+    ("1:4 RR (Close Entry)", dict(rr_ratio=4.0)),
+    ("1:4 RR + Risk <= 4.0", dict(rr_ratio=4.0, max_risk=4.0)),
+    ("1:3 RR + Tue+Thu", dict(day_filter=['Tuesday','Thursday'])),
+    ("1:4 RR + Tue+Thu", dict(rr_ratio=4.0, day_filter=['Tuesday','Thursday'])),
+    ("1:3 RR + LONG ONLY", dict(long_only=True)),
+    ("1:4 RR + LONG ONLY", dict(rr_ratio=4.0, long_only=True)),
+    ("1:3 RR + Tue+Thu + Risk <= 4.0", dict(day_filter=['Tuesday','Thursday'], max_risk=4.0)),
+    ("1:4 RR + Tue+Thu + Risk <= 4.0", dict(rr_ratio=4.0, day_filter=['Tuesday','Thursday'], max_risk=4.0)),
+]
+
+results = []
+for label, kwargs in combos:
+    trades = run_variant(df.copy(), nfp_weeks, **kwargs)
+    s = summarize(trades, label)
+    if s: 
+        print_row(s)
+        results.append(s)
+
+print("\nDone!")

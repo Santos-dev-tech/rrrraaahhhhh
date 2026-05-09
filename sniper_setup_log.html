@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Sniper Setup: Full Trade Log</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #05070a; --surface: #111827; --primary: #3b82f6;
+            --text: #f9fafb; --text-muted: #9ca3af; --success: #10b981; --danger: #ef4444;
+            --border: #374151;
+        }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 3rem 2rem; margin: 0; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { font-family: 'Outfit', sans-serif; font-size: 2.8rem; text-align: center; margin-bottom: 0.5rem; }
+        .subtitle { text-align: center; color: var(--text-muted); margin-bottom: 3rem; font-size: 1.1rem; }
+        
+        .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 3rem; }
+        .stat-card { background: var(--surface); border: 1px solid var(--border); padding: 1.5rem; border-radius: 12px; text-align: center; }
+        .stat-label { color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; display: block; }
+        .stat-val { font-family: 'Outfit', sans-serif; font-size: 2.2rem; font-weight: 800; }
+        
+        .table-container { background: var(--surface); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 1rem 1.5rem; text-align: left; border-bottom: 1px solid var(--border); }
+        th { color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; background: rgba(0,0,0,0.2); font-weight: 600; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+        
+        .badge { padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.5px; }
+        .badge.success { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+        .badge.danger { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+        .bold { font-weight: 600; }
+        .success { color: var(--success); }
+        .danger { color: var(--danger); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>The "Sniper" Setup</h1>
+        <div class="subtitle">13:00 UTC | Tue & Thu Only | Risk ≤ $3.50 | 1:3 RR | Stop Loss Trailed to Break Candle</div>
+        
+        <div class="summary-grid">
+            <div class="stat-card">
+                <span class="stat-label">Win Rate</span>
+                <span class="stat-val" style="color: var(--success);">40.7%</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Net P&L</span>
+                <span class="stat-val success">$510</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Profit Factor</span>
+                <span class="stat-val">2.06</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Total Trades</span>
+                <span class="stat-val">27</span>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Direction</th>
+                        <th>Entry Price</th>
+                        <th>Stop Loss</th>
+                        <th>Take Profit</th>
+                        <th>Exit Price</th>
+                        <th>P&L</th>
+                        <th>Outcome</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    
+        <tr>
+            <td>2025-11-11</td>
+            <td><span class='badge success'>LONG</span></td>
+            <td style="font-family: monospace;">4137.08</td>
+            <td style="font-family: monospace; color: var(--danger);">4134.56</td>
+            <td style="font-family: monospace; color: var(--success);">4144.65</td>
+            <td style="font-family: monospace;">4144.65</td>
+            <td class="bold success">$90.00</td>
+            <td><span class='badge success'>TP</span></td>
+        </tr>
+        
+        <tr>
+            <td>2025-08-28</td>
+            <td><span class='badge danger'>SHORT</span></td>
+            <td style="font-family: monospace;">3396.55</td>
+            <td style="font-family: monospace; color: var(--danger);">3400.92</td>
+            <td style="font-family: monospace; color: var(--success);">3383.44</td>
+            <td style="font-family: monospace;">3400.92</td>
+            <td class="bold danger">$-30.00</td>
+            <td><span class='badge danger'>SL</span></td>
+        </tr>
+        
+        <tr>
+            <td>2025-08-21</td>
+            <td><span class='badge danger'>SHORT</span></td>
+            <td style="font-family: monospace;">3340.95</td>
+            <td style="font-family: monospace; color: var(--danger);">3342.63</td>
+            <td style="font-family: monospace; color: var(--success);">3335.93</td>
+            <td style="font-family: monospace;">3342.63</td>
+            <td class="bold danger">$-30.00</td>
+            <td><span class='badge danger'>SL</span></td>
+        </tr>
+        
+        <tr>
+            <td>2025-08-19</td>
+            <td><span class='badge danger'>SHORT</span></td>
+            <td style="font-family: monospace;">3333.55</td>
+            <td style="font-family: monospace; color: var(--danger);">3335.51</td>
+            <td style="font-family: monospace; color: var(--success);">3327.66</td>
+            <td style="font-family: monospace;">3327.66</td>
+            <td class="bold success">$90.00</td>
+            <td><span class='badge success'>TP</span></td>
+        </tr>
+        
+        <tr>
+            <td>2025-08-05</td>
+            <td><span class='badge success'>LONG</span></td>
+            <td style="font-family: monospace;">3368.48</td>
+            <td style="font-family: monospace; color: var(--danger);">3366.07</td>
+            <td style="font-family: monospace; color: var(--success);">3375.71</td>
+            <td style="font-family: monospace;">3375.71</td>
+            <td class="bold success">$90.00</td>
+            <td><span class='badge success'>TP</span></td>
+        </tr>
+        
+        <tr>
+            <td>2025-07-08</td>
+            <td><span class='badge danger'>SHORT</span></td>
+            <td style="font-family: monospace;">3325.80</td>
+            <td style="font-family: monospace; color: var(--danger);">3327.38</td>
+            <td style="font-family: monospace; color: var(--success);">3321.04</td>
+            <td style="font-family: monospace;">3321.04</td>
+            <td class="bold success">$90.00</td>
+            <td><span class='badge success'>TP</span></td>
+        </tr>
+        
+        <tr>
+            <td>2025-07-01</td>
+            <td><span class='badge danger'>SHORT</span></td>
+            <td style="font-family: monospace;">3352.09</td>
+            <td style="font-family: monospace; color: var(--danger);">3353.07</td>
+            <td style="font-family: monospace; color: var(--success);">3349.16</td>
+            <td style="font-family: monospace;">3349.16</td>
+            <td class="bold success">$90.00</td>
+            <td><span class='badge success'>TP</span></td>
+        </tr>
+        
+        <tr>
+            <td>2025-06-19</td>
+            <td><span class='badge success'>LONG</span></td>
+            <td style="font-family: monospace;">3368.20</td>
+            <td style="font-family: monospace; color: var(--danger);">3364.64</td>
+            <td style="font-family: monospace; color: var(--success);">3378.90</td>
+            <td style="font-family: monospace;">3364.64</td>
+            <td class="bold danger">$-30.00</td>
+            <td><span class='badge danger'>SL</span></td>
+        </tr>
+        
+        <tr>
+            <td>2025-06-10</td>
+            <td><span class='badge success'>LONG</span></td>
+            <td style="font-family: monospace;">3339.05</td>
+            <td style="font-family: monospace; color: var(--danger);">3336.66</td>
+            <td style="font-family: monospace; color: var(--success);">3346.23</td>
+            <td style="font-family: monospace;">3346.23</td>
+            <td class="bold success">$90.00</td>
+            <td><span class='badge success'>TP</span></td>
+        </tr>
+        
+        <tr>
+            <td>2025-04-08</td>
+            <td><span class='badge success'>LONG</span></td>
+            <td style="font-family: monospace;">3005.66</td>
+            <td style="font-family: monospace; color: var(--danger);">3004.05</td>
+            <td style="font-family: monospace; color: var(--success);">3010.48</td>
+            <td style="font-family: monospace;">3010.48</td>
+            <td class="bold success">$90.00</td>
+            <td><span class='badge success'>TP</span></td>
+        </tr>
+        
+        <tr>
+            <td>2025-03-25</td>
+            <td><span class='badge success'>LONG</span></td>
+            <td style="font-family: monospace;">3023.07</td>
+            <td style="font-family: monospace; color: var(--danger);">3021.32</td>
+            <td style="font-family: monospace; color: var(--success);">3028.31</td>
+            <td style="font-family: monospace;">3021.32</td>
+            <td class="bold danger">$-30.00</td>
+            <td><span class='badge danger'>SL</span></td>
+        </tr>
+        
+        <tr>
+            <td>2025-03-18</td>
+            <td><span class='badge danger'>SHORT</span></td>
+            <td style="font-family: monospace;">3033.94</td>
+            <td style="font-family: monospace; color: var(--danger);">3036.72</td>
+            <td style="font-family: monospace; color: var(--success);">3025.60</td>
+            <td style="font-family: monospace;">3036.72</td>
+            <td class="bold danger">$-30.00</td>
+            <td><span class='badge danger'>SL</span></td>
+        </tr>
+        
+        <tr>
+            <td>2025-03-04</td>
+            <td><span class='badge success'>LONG</span></td>
+            <td style="font-family: monospace;">2926.28</td>
+            <td style="font-family: monospace; color: var(--danger);">2925.12</td>
+            <td style="font-family: monospace; color: var(--success);">2929.73</td>
+            <td style="font-family: monospace;">2925.12</td>
+            <td class="bold danger">$-30.00</td>
+            <td><span class='badge danger'>SL</span></td>
+        </tr>
+        
+        <tr>
+            <td>2025-02-25</td>
+            <td><span class='badge success'>LONG</span></td>
+            <td style="font-family: monospace;">2929.58</td>
+            <td style="font-family: monospace; color: var(--danger);">2926.86</td>
+            <td style="font-family: monospace; color: var(--success);">2937.73</td>
+            <td style="font-family: monospace;">2937.73</td>
+            <td class="bold success">$90.00</td>
+            <td><span class='badge success'>TP</span></td>
+        </tr>
+        
+        <tr>
+            <td>2025-02-18</td>
+            <td><span class='badge danger'>SHORT</span></td>
+            <td style="font-family: monospace;">2916.42</td>
+            <td style="font-family: monospace; color: var(--danger);">2917.92</td>
+            <td style="font-family: monospace; color: var(--success);">2911.91</td>
+            <td style="font-family: monospace;">2917.92</td>
+            <td class="bold danger">$-30.00</td>
+            <td><span class='badge danger'>SL</span></td>
+        </tr>
+        
+        <tr>
+            <td>2025-02-04</td>
+            <td><span class='badge success'>LONG</span></td>
+            <td style="font-family: monospace;">2823.00</td>
+            <td style="font-family: monospace; color: var(--danger);">2821.15</td>
+            <td style="font-family: monospace; color: var(--success);">2828.57</td>
+            <td style="font-family: monospace;">2828.57</td>
+            <td class="bold success">$90.00</td>
+            <td><span class='badge success'>TP</span></td>
+        </tr>
+        
+        <tr>
+            <td>2025-01-28</td>
+            <td><span class='badge success'>LONG</span></td>
+            <td style="font-family: monospace;">2747.07</td>
+            <td style="font-family: monospace; color: var(--danger);">2744.84</td>
+            <td style="font-family: monospace; color: var(--success);">2753.77</td>
+            <td style="font-family: monospace;">2753.77</td>
+            <td class="bold success">$90.00</td>
+            <td><span class='badge success'>TP</span></td>
+        </tr>
+        
+        <tr>
+            <td>2025-01-23</td>
+            <td><span class='badge danger'>SHORT</span></td>
+            <td style="font-family: monospace;">2742.41</td>
+            <td style="font-family: monospace; color: var(--danger);">2744.88</td>
+            <td style="font-family: monospace; color: var(--success);">2735.00</td>
+            <td style="font-family: monospace;">2744.88</td>
+            <td class="bold danger">$-30.00</td>
+            <td><span class='badge danger'>SL</span></td>
+        </tr>
+        
+        <tr>
+            <td>2025-01-21</td>
+            <td><span class='badge success'>LONG</span></td>
+            <td style="font-family: monospace;">2728.34</td>
+            <td style="font-family: monospace; color: var(--danger);">2726.43</td>
+            <td style="font-family: monospace; color: var(--success);">2734.07</td>
+            <td style="font-family: monospace;">2726.43</td>
+            <td class="bold danger">$-30.00</td>
+            <td><span class='badge danger'>SL</span></td>
+        </tr>
+        
+        <tr>
+            <td>2025-01-16</td>
+            <td><span class='badge success'>LONG</span></td>
+            <td style="font-family: monospace;">2704.46</td>
+            <td style="font-family: monospace; color: var(--danger);">2702.92</td>
+            <td style="font-family: monospace; color: var(--success);">2709.08</td>
+            <td style="font-family: monospace;">2709.08</td>
+            <td class="bold success">$90.00</td>
+            <td><span class='badge success'>TP</span></td>
+        </tr>
+        
+        <tr>
+            <td>2025-01-14</td>
+            <td><span class='badge success'>LONG</span></td>
+            <td style="font-family: monospace;">2670.72</td>
+            <td style="font-family: monospace; color: var(--danger);">2668.22</td>
+            <td style="font-family: monospace; color: var(--success);">2678.24</td>
+            <td style="font-family: monospace;">2668.22</td>
+            <td class="bold danger">$-30.00</td>
+            <td><span class='badge danger'>SL</span></td>
+        </tr>
+        
+        <tr>
+            <td>2025-01-09</td>
+            <td><span class='badge danger'>SHORT</span></td>
+            <td style="font-family: monospace;">2673.20</td>
+            <td style="font-family: monospace; color: var(--danger);">2675.75</td>
+            <td style="font-family: monospace; color: var(--success);">2665.56</td>
+            <td style="font-family: monospace;">2675.75</td>
+            <td class="bold danger">$-30.00</td>
+            <td><span class='badge danger'>SL</span></td>
+        </tr>
+        
+        <tr>
+            <td>2024-12-31</td>
+            <td><span class='badge danger'>SHORT</span></td>
+            <td style="font-family: monospace;">2608.74</td>
+            <td style="font-family: monospace; color: var(--danger);">2609.83</td>
+            <td style="font-family: monospace; color: var(--success);">2605.49</td>
+            <td style="font-family: monospace;">2609.83</td>
+            <td class="bold danger">$-30.00</td>
+            <td><span class='badge danger'>SL</span></td>
+        </tr>
+        
+        <tr>
+            <td>2024-12-24</td>
+            <td><span class='badge success'>LONG</span></td>
+            <td style="font-family: monospace;">2614.26</td>
+            <td style="font-family: monospace; color: var(--danger);">2612.48</td>
+            <td style="font-family: monospace; color: var(--success);">2619.60</td>
+            <td style="font-family: monospace;">2612.48</td>
+            <td class="bold danger">$-30.00</td>
+            <td><span class='badge danger'>SL</span></td>
+        </tr>
+        
+        <tr>
+            <td>2024-12-19</td>
+            <td><span class='badge danger'>SHORT</span></td>
+            <td style="font-family: monospace;">2603.09</td>
+            <td style="font-family: monospace; color: var(--danger);">2605.12</td>
+            <td style="font-family: monospace; color: var(--success);">2597.00</td>
+            <td style="font-family: monospace;">2605.12</td>
+            <td class="bold danger">$-30.00</td>
+            <td><span class='badge danger'>SL</span></td>
+        </tr>
+        
+        <tr>
+            <td>2024-12-17</td>
+            <td><span class='badge success'>LONG</span></td>
+            <td style="font-family: monospace;">2644.92</td>
+            <td style="font-family: monospace; color: var(--danger);">2644.05</td>
+            <td style="font-family: monospace; color: var(--success);">2647.50</td>
+            <td style="font-family: monospace;">2644.05</td>
+            <td class="bold danger">$-30.00</td>
+            <td><span class='badge danger'>SL</span></td>
+        </tr>
+        
+        <tr>
+            <td>2024-12-10</td>
+            <td><span class='badge danger'>SHORT</span></td>
+            <td style="font-family: monospace;">2674.70</td>
+            <td style="font-family: monospace; color: var(--danger);">2677.28</td>
+            <td style="font-family: monospace; color: var(--success);">2666.98</td>
+            <td style="font-family: monospace;">2677.28</td>
+            <td class="bold danger">$-30.00</td>
+            <td><span class='badge danger'>SL</span></td>
+        </tr>
+        
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
