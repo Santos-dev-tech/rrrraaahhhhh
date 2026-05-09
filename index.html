@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XAUUSD Backtest Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --surface-color: #1a2235;
+            --surface-hover: #232d46;
+            --primary-accent: #00f0ff;
+            --secondary-accent: #ff007a;
+            --text-main: #f0f4f8;
+            --text-muted: #8a9bb3;
+            --border: rgba(255, 255, 255, 0.05);
+            --gradient-1: linear-gradient(135deg, #00f0ff 0%, #0055ff 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+            letter-spacing: -1px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            font-weight: 300;
+            margin-bottom: 3rem;
+            animation: fadeInDown 0.8s ease-out 0.1s backwards;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--surface-color);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2.5rem 2rem;
+            text-decoration: none;
+            color: var(--text-main);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 0.8s ease-out backwards;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .card:nth-child(1) { animation-delay: 0.2s; }
+        .card:nth-child(2) { animation-delay: 0.3s; }
+        .card:nth-child(3) { animation-delay: 0.4s; }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--gradient-1);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border-color: rgba(0, 240, 255, 0.3);
+            background: var(--surface-hover);
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        .card-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .card-desc {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Strategy Intelligence Hub</h1>
+    <div class="subtitle">XAUUSD Breakout Backtesting Dashboards</div>
+
+    <div class="grid">
+        <a href="stats.html" class="card">
+            <div class="card-title">Strategy Analytics</div>
+            <div class="card-desc">View max profit combinations, top performing setups, and the breakeven trailing stop analysis.</div>
+        </a>
+
+        <a href="trades_1_year_log_filtered.html" class="card">
+            <div class="card-title">1-Year Filtered Log</div>
+            <div class="card-desc">Trade log filtered for the exact past 1 year, and skipping any setup with >$4.00 anchor risk.</div>
+        </a>
+
+        <a href="trades_log.html" class="card">
+            <div class="card-title">Raw All-Time Log</div>
+            <div class="card-desc">The complete, unfiltered raw trade log spanning the entire 18-month dataset.</div>
+        </a>
+    </div>
+</div>
+
+</body>
+</html>

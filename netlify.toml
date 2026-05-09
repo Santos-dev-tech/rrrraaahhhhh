@@ -1,0 +1,5 @@
+[build]
+  # We are deploying a simple static site. No build command needed.
+  command = ""
+  # Publish the root directory where the HTML files are located.
+  publish = "."
