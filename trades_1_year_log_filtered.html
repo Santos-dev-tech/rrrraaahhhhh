@@ -1,0 +1,2039 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filtered Trade Logs (Past 1 Year)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #05070a;
+            --surface: #111827;
+            --surface-hover: #1f2937;
+            --primary: #3b82f6;
+            --text: #f9fafb;
+            --text-muted: #9ca3af;
+            --success: #10b981;
+            --danger: #ef4444;
+            --border: #374151;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 3rem 2rem;
+            line-height: 1.5;
+        }
+        .container { max-width: 1000px; margin: 0 auto; }
+        
+        .header { text-align: center; margin-bottom: 3rem; }
+        h1 { font-family: 'Outfit', sans-serif; font-size: 2.5rem; margin-bottom: 0.5rem; letter-spacing: -0.5px; }
+        .subtitle { color: var(--text-muted); font-size: 1.1rem; }
+        
+        .filter-badge {
+            display: inline-block;
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--primary);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-top: 1rem;
+        }
+        
+        .tabs { display: flex; justify-content: center; gap: 1rem; margin-bottom: 2rem; }
+        .tab-btn {
+            background: var(--surface);
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+            padding: 0.75rem 2rem;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .tab-btn.active {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: var(--primary);
+            color: var(--primary);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+        }
+        .tab-btn:hover:not(.active) { background: var(--surface-hover); color: var(--text); }
+        
+        .tab-content { display: none; animation: fadeIn 0.4s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .stat-label { color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; display: block; }
+        .stat-val { font-family: 'Outfit', sans-serif; font-size: 2.2rem; font-weight: 800; }
+        
+        .table-container {
+            background: var(--surface);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 1.2rem 1.5rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        th {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background: rgba(0,0,0,0.2);
+            font-weight: 600;
+        }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+        
+        .badge {
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .badge.success { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+        .badge.danger { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+        .bold { font-weight: 600; }
+        .success { color: var(--success); }
+        .danger { color: var(--danger); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Raw Trade Logs (1:3 RR)</h1>
+        <div class="subtitle">Filtered exactly for the past 1 Year (2025-05-08 to 2026-05-08)</div>
+        <div class="filter-badge">Filter Active: Risk ≤ $4.00</div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('tab-1300')">13:00 UTC Anchor</button>
+        <button class="tab-btn" onclick="showTab('tab-1255')">12:55 UTC Anchor</button>
+    </div>
+
+    <!-- 13:00 TAB -->
+    <div id="tab-1300" class="tab-content active">
+        <div class="summary-grid">
+            <div class="stat-card">
+                <span class="stat-label">Win Rate</span>
+                <span class="stat-val" style="color: var(--success);">45.9%</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Net P&L</span>
+                <span class="stat-val success">$2,130</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Total Trades</span>
+                <span class="stat-val">85</span>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Direction</th>
+                        <th>Entry</th>
+                        <th>Stop Loss</th>
+                        <th>Take Profit</th>
+                        <th>P&L</th>
+                        <th>Outcome</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    
+            <tr>
+                <td>2026-05-05</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4575.40</td>
+                <td style="font-family: monospace;">4573.40</td>
+                <td style="font-family: monospace;">4581.39</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-04-28</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">4584.14</td>
+                <td style="font-family: monospace;">4584.85</td>
+                <td style="font-family: monospace;">4582.03</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-04-21</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">4778.09</td>
+                <td style="font-family: monospace;">4780.29</td>
+                <td style="font-family: monospace;">4771.50</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-04-14</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4778.17</td>
+                <td style="font-family: monospace;">4776.24</td>
+                <td style="font-family: monospace;">4783.97</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-03-13</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">5113.19</td>
+                <td style="font-family: monospace;">5115.38</td>
+                <td style="font-family: monospace;">5106.62</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-03-11</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">5176.97</td>
+                <td style="font-family: monospace;">5173.66</td>
+                <td style="font-family: monospace;">5186.88</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-02-27</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">5195.32</td>
+                <td style="font-family: monospace;">5192.73</td>
+                <td style="font-family: monospace;">5203.10</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-02-25</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">5185.72</td>
+                <td style="font-family: monospace;">5183.89</td>
+                <td style="font-family: monospace;">5191.21</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-02-20</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">5028.34</td>
+                <td style="font-family: monospace;">5025.50</td>
+                <td style="font-family: monospace;">5036.88</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-02-17</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">4926.47</td>
+                <td style="font-family: monospace;">4929.24</td>
+                <td style="font-family: monospace;">4918.13</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-02-13</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">4969.52</td>
+                <td style="font-family: monospace;">4972.55</td>
+                <td style="font-family: monospace;">4960.42</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-02-03</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4921.18</td>
+                <td style="font-family: monospace;">4920.82</td>
+                <td style="font-family: monospace;">4922.25</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-01-22</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4822.77</td>
+                <td style="font-family: monospace;">4819.75</td>
+                <td style="font-family: monospace;">4831.80</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-01-14</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">4632.56</td>
+                <td style="font-family: monospace;">4635.94</td>
+                <td style="font-family: monospace;">4622.42</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-01-13</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4596.67</td>
+                <td style="font-family: monospace;">4593.06</td>
+                <td style="font-family: monospace;">4607.49</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-01-09</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4470.51</td>
+                <td style="font-family: monospace;">4468.84</td>
+                <td style="font-family: monospace;">4475.49</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-01-08</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">4423.31</td>
+                <td style="font-family: monospace;">4424.56</td>
+                <td style="font-family: monospace;">4419.54</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-01-07</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">4443.45</td>
+                <td style="font-family: monospace;">4447.44</td>
+                <td style="font-family: monospace;">4431.46</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-01-06</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4465.75</td>
+                <td style="font-family: monospace;">4463.99</td>
+                <td style="font-family: monospace;">4471.03</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-12-19</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4328.67</td>
+                <td style="font-family: monospace;">4327.43</td>
+                <td style="font-family: monospace;">4332.41</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-12-18</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">4319.70</td>
+                <td style="font-family: monospace;">4321.28</td>
+                <td style="font-family: monospace;">4314.96</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-12-17</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4321.70</td>
+                <td style="font-family: monospace;">4320.07</td>
+                <td style="font-family: monospace;">4326.56</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-12-12</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4332.60</td>
+                <td style="font-family: monospace;">4331.24</td>
+                <td style="font-family: monospace;">4336.68</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-12-11</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">4215.04</td>
+                <td style="font-family: monospace;">4217.30</td>
+                <td style="font-family: monospace;">4208.23</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-12-10</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4198.52</td>
+                <td style="font-family: monospace;">4195.53</td>
+                <td style="font-family: monospace;">4207.49</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-11-28</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">4176.56</td>
+                <td style="font-family: monospace;">4178.61</td>
+                <td style="font-family: monospace;">4170.42</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-11-27</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">4150.28</td>
+                <td style="font-family: monospace;">4153.97</td>
+                <td style="font-family: monospace;">4139.21</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-11-26</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4159.31</td>
+                <td style="font-family: monospace;">4157.53</td>
+                <td style="font-family: monospace;">4164.67</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-11-25</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4134.29</td>
+                <td style="font-family: monospace;">4131.84</td>
+                <td style="font-family: monospace;">4141.63</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-11-20</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4088.82</td>
+                <td style="font-family: monospace;">4086.01</td>
+                <td style="font-family: monospace;">4097.25</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-11-11</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4137.08</td>
+                <td style="font-family: monospace;">4134.56</td>
+                <td style="font-family: monospace;">4144.65</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-11-04</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3988.88</td>
+                <td style="font-family: monospace;">3986.65</td>
+                <td style="font-family: monospace;">3995.56</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-10-24</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4091.24</td>
+                <td style="font-family: monospace;">4088.24</td>
+                <td style="font-family: monospace;">4100.26</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-10-23</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4131.35</td>
+                <td style="font-family: monospace;">4127.90</td>
+                <td style="font-family: monospace;">4141.69</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-10-15</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4190.64</td>
+                <td style="font-family: monospace;">4187.16</td>
+                <td style="font-family: monospace;">4201.09</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-10-09</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4055.41</td>
+                <td style="font-family: monospace;">4052.53</td>
+                <td style="font-family: monospace;">4064.04</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-10-08</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4043.93</td>
+                <td style="font-family: monospace;">4042.24</td>
+                <td style="font-family: monospace;">4048.98</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-10-07</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3982.93</td>
+                <td style="font-family: monospace;">3980.66</td>
+                <td style="font-family: monospace;">3989.72</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-09-30</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3814.24</td>
+                <td style="font-family: monospace;">3817.38</td>
+                <td style="font-family: monospace;">3804.83</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-09-26</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3755.36</td>
+                <td style="font-family: monospace;">3753.81</td>
+                <td style="font-family: monospace;">3759.98</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-09-24</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3769.55</td>
+                <td style="font-family: monospace;">3767.40</td>
+                <td style="font-family: monospace;">3775.99</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-09-23</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3787.19</td>
+                <td style="font-family: monospace;">3783.58</td>
+                <td style="font-family: monospace;">3798.04</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-09-18</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3659.59</td>
+                <td style="font-family: monospace;">3663.08</td>
+                <td style="font-family: monospace;">3649.10</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-09-17</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3675.22</td>
+                <td style="font-family: monospace;">3677.90</td>
+                <td style="font-family: monospace;">3667.19</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-09-16</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3685.59</td>
+                <td style="font-family: monospace;">3688.44</td>
+                <td style="font-family: monospace;">3677.05</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-09-12</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3647.51</td>
+                <td style="font-family: monospace;">3646.80</td>
+                <td style="font-family: monospace;">3649.64</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-09-11</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3635.36</td>
+                <td style="font-family: monospace;">3631.82</td>
+                <td style="font-family: monospace;">3645.95</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-09-02</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3480.50</td>
+                <td style="font-family: monospace;">3482.72</td>
+                <td style="font-family: monospace;">3473.84</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-08-29</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3416.52</td>
+                <td style="font-family: monospace;">3418.06</td>
+                <td style="font-family: monospace;">3411.90</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-08-27</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3382.59</td>
+                <td style="font-family: monospace;">3380.04</td>
+                <td style="font-family: monospace;">3390.23</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-08-22</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3326.08</td>
+                <td style="font-family: monospace;">3323.52</td>
+                <td style="font-family: monospace;">3333.74</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-08-21</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3340.95</td>
+                <td style="font-family: monospace;">3342.63</td>
+                <td style="font-family: monospace;">3335.93</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-08-20</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3340.76</td>
+                <td style="font-family: monospace;">3342.96</td>
+                <td style="font-family: monospace;">3334.18</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-08-19</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3333.55</td>
+                <td style="font-family: monospace;">3335.51</td>
+                <td style="font-family: monospace;">3327.66</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-08-15</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3341.23</td>
+                <td style="font-family: monospace;">3344.01</td>
+                <td style="font-family: monospace;">3332.88</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-08-14</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3354.61</td>
+                <td style="font-family: monospace;">3352.41</td>
+                <td style="font-family: monospace;">3361.20</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-08-13</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3354.85</td>
+                <td style="font-family: monospace;">3357.88</td>
+                <td style="font-family: monospace;">3345.74</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-08-07</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3384.35</td>
+                <td style="font-family: monospace;">3382.05</td>
+                <td style="font-family: monospace;">3391.27</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-08-05</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3368.48</td>
+                <td style="font-family: monospace;">3366.07</td>
+                <td style="font-family: monospace;">3375.71</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-07-29</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3320.62</td>
+                <td style="font-family: monospace;">3322.34</td>
+                <td style="font-family: monospace;">3315.44</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-07-24</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3355.80</td>
+                <td style="font-family: monospace;">3354.04</td>
+                <td style="font-family: monospace;">3361.10</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-07-23</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3412.83</td>
+                <td style="font-family: monospace;">3416.03</td>
+                <td style="font-family: monospace;">3403.22</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-07-22</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3410.82</td>
+                <td style="font-family: monospace;">3409.00</td>
+                <td style="font-family: monospace;">3416.30</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-07-18</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3360.02</td>
+                <td style="font-family: monospace;">3358.23</td>
+                <td style="font-family: monospace;">3365.38</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-07-17</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3314.96</td>
+                <td style="font-family: monospace;">3311.79</td>
+                <td style="font-family: monospace;">3324.48</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-07-16</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3333.98</td>
+                <td style="font-family: monospace;">3336.74</td>
+                <td style="font-family: monospace;">3325.71</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-07-11</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3357.94</td>
+                <td style="font-family: monospace;">3355.20</td>
+                <td style="font-family: monospace;">3366.19</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-07-09</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3298.96</td>
+                <td style="font-family: monospace;">3295.18</td>
+                <td style="font-family: monospace;">3310.27</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-07-08</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3325.80</td>
+                <td style="font-family: monospace;">3327.38</td>
+                <td style="font-family: monospace;">3321.04</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-07-01</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3352.09</td>
+                <td style="font-family: monospace;">3353.07</td>
+                <td style="font-family: monospace;">3349.16</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-06-25</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3317.03</td>
+                <td style="font-family: monospace;">3318.94</td>
+                <td style="font-family: monospace;">3311.32</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-06-20</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3346.84</td>
+                <td style="font-family: monospace;">3345.73</td>
+                <td style="font-family: monospace;">3350.19</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-06-19</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3368.20</td>
+                <td style="font-family: monospace;">3364.64</td>
+                <td style="font-family: monospace;">3378.90</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-06-18</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3389.30</td>
+                <td style="font-family: monospace;">3387.75</td>
+                <td style="font-family: monospace;">3393.95</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-06-17</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3389.38</td>
+                <td style="font-family: monospace;">3387.53</td>
+                <td style="font-family: monospace;">3394.90</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-06-10</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3339.05</td>
+                <td style="font-family: monospace;">3336.66</td>
+                <td style="font-family: monospace;">3346.23</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-06-03</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3361.73</td>
+                <td style="font-family: monospace;">3360.05</td>
+                <td style="font-family: monospace;">3366.76</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-05-29</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3310.83</td>
+                <td style="font-family: monospace;">3313.22</td>
+                <td style="font-family: monospace;">3303.65</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-05-28</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3310.54</td>
+                <td style="font-family: monospace;">3313.38</td>
+                <td style="font-family: monospace;">3302.05</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-05-27</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3298.14</td>
+                <td style="font-family: monospace;">3294.90</td>
+                <td style="font-family: monospace;">3307.86</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-05-22</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3312.32</td>
+                <td style="font-family: monospace;">3309.64</td>
+                <td style="font-family: monospace;">3320.37</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-05-21</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3302.65</td>
+                <td style="font-family: monospace;">3306.37</td>
+                <td style="font-family: monospace;">3291.48</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-05-20</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3235.89</td>
+                <td style="font-family: monospace;">3237.60</td>
+                <td style="font-family: monospace;">3230.76</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-05-13</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3245.65</td>
+                <td style="font-family: monospace;">3241.87</td>
+                <td style="font-family: monospace;">3256.99</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-05-09</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3331.11</td>
+                <td style="font-family: monospace;">3333.09</td>
+                <td style="font-family: monospace;">3325.17</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 12:55 TAB -->
+    <div id="tab-1255" class="tab-content">
+        <div class="summary-grid">
+            <div class="stat-card">
+                <span class="stat-label">Win Rate</span>
+                <span class="stat-val" style="color: var(--success);">49.0%</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Net P&L</span>
+                <span class="stat-val success">$2,760</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Total Trades</span>
+                <span class="stat-val">96</span>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Direction</th>
+                        <th>Entry</th>
+                        <th>Stop Loss</th>
+                        <th>Take Profit</th>
+                        <th>P&L</th>
+                        <th>Outcome</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    
+            <tr>
+                <td>2026-05-05</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4565.97</td>
+                <td style="font-family: monospace;">4563.73</td>
+                <td style="font-family: monospace;">4572.67</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-04-28</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">4591.97</td>
+                <td style="font-family: monospace;">4595.10</td>
+                <td style="font-family: monospace;">4582.61</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-04-16</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4818.95</td>
+                <td style="font-family: monospace;">4815.62</td>
+                <td style="font-family: monospace;">4828.96</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-04-14</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4771.49</td>
+                <td style="font-family: monospace;">4770.44</td>
+                <td style="font-family: monospace;">4774.62</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-03-20</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">4677.02</td>
+                <td style="font-family: monospace;">4680.18</td>
+                <td style="font-family: monospace;">4667.56</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-03-19</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">4571.08</td>
+                <td style="font-family: monospace;">4575.05</td>
+                <td style="font-family: monospace;">4559.17</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-03-10</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">5186.88</td>
+                <td style="font-family: monospace;">5185.30</td>
+                <td style="font-family: monospace;">5191.60</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-02-27</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">5188.84</td>
+                <td style="font-family: monospace;">5186.38</td>
+                <td style="font-family: monospace;">5196.25</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-02-25</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">5183.25</td>
+                <td style="font-family: monospace;">5180.49</td>
+                <td style="font-family: monospace;">5191.52</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-02-20</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">5026.63</td>
+                <td style="font-family: monospace;">5023.05</td>
+                <td style="font-family: monospace;">5037.37</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-02-19</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">4982.92</td>
+                <td style="font-family: monospace;">4986.05</td>
+                <td style="font-family: monospace;">4973.53</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-02-12</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">5054.50</td>
+                <td style="font-family: monospace;">5050.79</td>
+                <td style="font-family: monospace;">5065.62</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-01-28</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">5279.29</td>
+                <td style="font-family: monospace;">5275.41</td>
+                <td style="font-family: monospace;">5290.93</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-01-27</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">5086.14</td>
+                <td style="font-family: monospace;">5084.05</td>
+                <td style="font-family: monospace;">5092.42</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2026-01-20</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">4727.52</td>
+                <td style="font-family: monospace;">4728.91</td>
+                <td style="font-family: monospace;">4723.37</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-12-30</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4401.96</td>
+                <td style="font-family: monospace;">4398.87</td>
+                <td style="font-family: monospace;">4411.20</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-12-23</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4487.92</td>
+                <td style="font-family: monospace;">4485.53</td>
+                <td style="font-family: monospace;">4495.10</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-12-19</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4327.24</td>
+                <td style="font-family: monospace;">4325.65</td>
+                <td style="font-family: monospace;">4331.99</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-12-17</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4318.21</td>
+                <td style="font-family: monospace;">4314.59</td>
+                <td style="font-family: monospace;">4329.07</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-12-16</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">4292.64</td>
+                <td style="font-family: monospace;">4295.76</td>
+                <td style="font-family: monospace;">4283.31</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-12-10</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4196.85</td>
+                <td style="font-family: monospace;">4193.04</td>
+                <td style="font-family: monospace;">4208.27</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-12-02</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4209.89</td>
+                <td style="font-family: monospace;">4208.28</td>
+                <td style="font-family: monospace;">4214.71</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-11-28</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4177.46</td>
+                <td style="font-family: monospace;">4176.06</td>
+                <td style="font-family: monospace;">4181.66</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-11-27</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">4153.52</td>
+                <td style="font-family: monospace;">4154.70</td>
+                <td style="font-family: monospace;">4149.98</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-11-25</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4129.97</td>
+                <td style="font-family: monospace;">4128.89</td>
+                <td style="font-family: monospace;">4133.21</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-11-20</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4082.07</td>
+                <td style="font-family: monospace;">4080.84</td>
+                <td style="font-family: monospace;">4085.74</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-11-19</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">4113.48</td>
+                <td style="font-family: monospace;">4115.73</td>
+                <td style="font-family: monospace;">4106.71</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-11-18</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4034.33</td>
+                <td style="font-family: monospace;">4030.54</td>
+                <td style="font-family: monospace;">4045.69</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-11-12</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">4129.53</td>
+                <td style="font-family: monospace;">4131.56</td>
+                <td style="font-family: monospace;">4123.43</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-11-11</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4136.80</td>
+                <td style="font-family: monospace;">4133.36</td>
+                <td style="font-family: monospace;">4147.13</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-10-29</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">4023.49</td>
+                <td style="font-family: monospace;">4025.98</td>
+                <td style="font-family: monospace;">4016.02</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-10-28</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3913.68</td>
+                <td style="font-family: monospace;">3911.91</td>
+                <td style="font-family: monospace;">3919.00</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-10-24</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4082.32</td>
+                <td style="font-family: monospace;">4078.59</td>
+                <td style="font-family: monospace;">4093.52</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-10-23</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4128.62</td>
+                <td style="font-family: monospace;">4125.26</td>
+                <td style="font-family: monospace;">4138.70</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-10-22</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4036.33</td>
+                <td style="font-family: monospace;">4032.92</td>
+                <td style="font-family: monospace;">4046.55</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-10-10</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3984.17</td>
+                <td style="font-family: monospace;">3987.38</td>
+                <td style="font-family: monospace;">3974.55</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-10-09</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4053.78</td>
+                <td style="font-family: monospace;">4050.42</td>
+                <td style="font-family: monospace;">4063.84</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-10-08</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">4040.63</td>
+                <td style="font-family: monospace;">4038.64</td>
+                <td style="font-family: monospace;">4046.60</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-10-07</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3980.12</td>
+                <td style="font-family: monospace;">3978.09</td>
+                <td style="font-family: monospace;">3986.21</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-09-30</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3817.67</td>
+                <td style="font-family: monospace;">3820.73</td>
+                <td style="font-family: monospace;">3808.48</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-09-26</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3752.97</td>
+                <td style="font-family: monospace;">3750.73</td>
+                <td style="font-family: monospace;">3759.69</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-09-24</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3770.06</td>
+                <td style="font-family: monospace;">3767.40</td>
+                <td style="font-family: monospace;">3778.04</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-09-23</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3785.03</td>
+                <td style="font-family: monospace;">3782.26</td>
+                <td style="font-family: monospace;">3793.34</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-09-19</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3648.11</td>
+                <td style="font-family: monospace;">3650.14</td>
+                <td style="font-family: monospace;">3642.04</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-09-18</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3662.86</td>
+                <td style="font-family: monospace;">3664.76</td>
+                <td style="font-family: monospace;">3657.18</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-09-17</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3677.91</td>
+                <td style="font-family: monospace;">3679.92</td>
+                <td style="font-family: monospace;">3671.88</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-09-16</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3687.84</td>
+                <td style="font-family: monospace;">3689.87</td>
+                <td style="font-family: monospace;">3681.76</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-09-12</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3645.91</td>
+                <td style="font-family: monospace;">3642.78</td>
+                <td style="font-family: monospace;">3655.29</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-09-10</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3645.76</td>
+                <td style="font-family: monospace;">3642.61</td>
+                <td style="font-family: monospace;">3655.20</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-09-09</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3648.97</td>
+                <td style="font-family: monospace;">3645.88</td>
+                <td style="font-family: monospace;">3658.22</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-09-02</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3481.63</td>
+                <td style="font-family: monospace;">3485.36</td>
+                <td style="font-family: monospace;">3470.43</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-08-29</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3416.89</td>
+                <td style="font-family: monospace;">3416.02</td>
+                <td style="font-family: monospace;">3419.49</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-08-28</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3399.98</td>
+                <td style="font-family: monospace;">3396.05</td>
+                <td style="font-family: monospace;">3411.76</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-08-27</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3382.45</td>
+                <td style="font-family: monospace;">3380.05</td>
+                <td style="font-family: monospace;">3389.65</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-08-26</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3371.04</td>
+                <td style="font-family: monospace;">3374.97</td>
+                <td style="font-family: monospace;">3359.25</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-08-22</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3325.94</td>
+                <td style="font-family: monospace;">3322.67</td>
+                <td style="font-family: monospace;">3335.78</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-08-21</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3341.96</td>
+                <td style="font-family: monospace;">3340.45</td>
+                <td style="font-family: monospace;">3346.50</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-08-20</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3342.04</td>
+                <td style="font-family: monospace;">3344.00</td>
+                <td style="font-family: monospace;">3336.17</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-08-19</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3334.29</td>
+                <td style="font-family: monospace;">3336.01</td>
+                <td style="font-family: monospace;">3329.14</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-08-15</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3343.54</td>
+                <td style="font-family: monospace;">3340.73</td>
+                <td style="font-family: monospace;">3351.97</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-08-14</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3351.80</td>
+                <td style="font-family: monospace;">3348.48</td>
+                <td style="font-family: monospace;">3361.77</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-08-13</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3357.48</td>
+                <td style="font-family: monospace;">3358.80</td>
+                <td style="font-family: monospace;">3353.51</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-08-07</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3382.80</td>
+                <td style="font-family: monospace;">3379.64</td>
+                <td style="font-family: monospace;">3392.30</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-08-06</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3369.30</td>
+                <td style="font-family: monospace;">3366.67</td>
+                <td style="font-family: monospace;">3377.19</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-08-05</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3367.02</td>
+                <td style="font-family: monospace;">3365.34</td>
+                <td style="font-family: monospace;">3372.07</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-07-29</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3322.60</td>
+                <td style="font-family: monospace;">3324.73</td>
+                <td style="font-family: monospace;">3316.19</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-07-25</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3338.37</td>
+                <td style="font-family: monospace;">3342.22</td>
+                <td style="font-family: monospace;">3326.79</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-07-23</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3419.84</td>
+                <td style="font-family: monospace;">3421.13</td>
+                <td style="font-family: monospace;">3415.98</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-07-22</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3407.87</td>
+                <td style="font-family: monospace;">3405.90</td>
+                <td style="font-family: monospace;">3413.80</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-07-18</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3358.89</td>
+                <td style="font-family: monospace;">3360.52</td>
+                <td style="font-family: monospace;">3354.02</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-07-17</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3315.08</td>
+                <td style="font-family: monospace;">3311.79</td>
+                <td style="font-family: monospace;">3324.98</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-07-16</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3335.00</td>
+                <td style="font-family: monospace;">3333.48</td>
+                <td style="font-family: monospace;">3339.56</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-07-15</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3348.44</td>
+                <td style="font-family: monospace;">3352.30</td>
+                <td style="font-family: monospace;">3336.85</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-07-10</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3326.06</td>
+                <td style="font-family: monospace;">3323.12</td>
+                <td style="font-family: monospace;">3334.88</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-07-09</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3295.55</td>
+                <td style="font-family: monospace;">3299.45</td>
+                <td style="font-family: monospace;">3283.85</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-07-08</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3327.78</td>
+                <td style="font-family: monospace;">3329.14</td>
+                <td style="font-family: monospace;">3323.70</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-07-01</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3354.29</td>
+                <td style="font-family: monospace;">3356.04</td>
+                <td style="font-family: monospace;">3349.04</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-06-27</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3269.41</td>
+                <td style="font-family: monospace;">3271.26</td>
+                <td style="font-family: monospace;">3263.87</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-06-26</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3321.59</td>
+                <td style="font-family: monospace;">3325.34</td>
+                <td style="font-family: monospace;">3310.33</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-06-25</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3320.09</td>
+                <td style="font-family: monospace;">3322.15</td>
+                <td style="font-family: monospace;">3313.91</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-06-20</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3346.18</td>
+                <td style="font-family: monospace;">3342.54</td>
+                <td style="font-family: monospace;">3357.09</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-06-19</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3367.36</td>
+                <td style="font-family: monospace;">3368.70</td>
+                <td style="font-family: monospace;">3363.33</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-06-18</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3387.32</td>
+                <td style="font-family: monospace;">3385.17</td>
+                <td style="font-family: monospace;">3393.80</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-06-17</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3388.81</td>
+                <td style="font-family: monospace;">3385.35</td>
+                <td style="font-family: monospace;">3399.18</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-06-13</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3438.13</td>
+                <td style="font-family: monospace;">3435.28</td>
+                <td style="font-family: monospace;">3446.68</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-06-10</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3337.00</td>
+                <td style="font-family: monospace;">3339.55</td>
+                <td style="font-family: monospace;">3329.33</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-06-03</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3360.35</td>
+                <td style="font-family: monospace;">3356.57</td>
+                <td style="font-family: monospace;">3371.70</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-05-30</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3305.56</td>
+                <td style="font-family: monospace;">3302.78</td>
+                <td style="font-family: monospace;">3313.92</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-05-28</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3313.27</td>
+                <td style="font-family: monospace;">3310.05</td>
+                <td style="font-family: monospace;">3322.94</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-05-27</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3294.86</td>
+                <td style="font-family: monospace;">3292.53</td>
+                <td style="font-family: monospace;">3301.84</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-05-23</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3358.95</td>
+                <td style="font-family: monospace;">3356.48</td>
+                <td style="font-family: monospace;">3366.35</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-05-22</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3305.28</td>
+                <td style="font-family: monospace;">3303.63</td>
+                <td style="font-family: monospace;">3310.21</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-05-21</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3304.17</td>
+                <td style="font-family: monospace;">3302.15</td>
+                <td style="font-family: monospace;">3310.23</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-05-20</td>
+                <td><span class='badge danger'>SHORT</span></td>
+                <td style="font-family: monospace;">3240.74</td>
+                <td style="font-family: monospace;">3243.25</td>
+                <td style="font-family: monospace;">3233.20</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-05-16</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3180.14</td>
+                <td style="font-family: monospace;">3176.97</td>
+                <td style="font-family: monospace;">3189.65</td>
+                <td class="bold danger">$-30.00</td>
+                <td><span class='badge danger'>SL</span></td>
+            </tr>
+            
+            <tr>
+                <td>2025-05-08</td>
+                <td><span class='badge success'>LONG</span></td>
+                <td style="font-family: monospace;">3356.70</td>
+                <td style="font-family: monospace;">3354.15</td>
+                <td style="font-family: monospace;">3364.37</td>
+                <td class="bold success">$90.00</td>
+                <td><span class='badge success'>TP</span></td>
+            </tr>
+            
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById(tabId).classList.add('active');
+        event.currentTarget.classList.add('active');
+    }
+</script>
+
+</body>
+</html>
