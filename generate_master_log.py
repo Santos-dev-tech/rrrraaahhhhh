@@ -19,35 +19,91 @@ def process_trades(csv_file, cutoff_date):
         # Sort chronologically descending
         df = df.sort_values(by='date', ascending=False)
         
-        rows = ""
-        wins = 0
-        for _, row in df.iterrows():
-            if row['outcome'] == 'tp': wins += 1
+        if df.empty:
+            return "", 0, 0, 0, 0
             
-            outcome_class = "success" if row['outcome'] == 'tp' else "danger"
-            pnl_class = "success" if row['pnl'] > 0 else ("danger" if row['pnl'] < 0 else "")
-            direction_badge = f"<span class='badge {'success' if row['direction'] == 'long' else 'danger'}'>{row['direction'].upper()}</span>"
-            
-            rows += f"""
-            <tr>
-                <td>{row['date'].strftime('%Y-%m-%d')}</td>
-                <td>{direction_badge}</td>
-                <td style="font-family: monospace;">{row['entry']:.2f}</td>
-                <td style="font-family: monospace; color: var(--danger);">{row['sl']:.2f}</td>
-                <td style="font-family: monospace; color: var(--success);">{row['tp']:.2f}</td>
-                <td class="bold {pnl_class}">${row['pnl']:.2f}</td>
-                <td><span class='badge {outcome_class}'>{row['outcome'].upper()}</span></td>
-            </tr>
-            """
-            
-        t = len(df)
-        wr = (wins / t * 100) if t > 0 else 0
-        pnl = df['pnl'].sum()
+        # Group by month
+        df['month_str'] = df['date'].dt.strftime('%B %Y')
+        df['month_sort'] = df['date'].dt.to_period('M')
+        
+        # Overall Stats
+        total_t = len(df)
+        total_wins = len(df[df['outcome'] == 'tp'])
+        total_wr = (total_wins / total_t * 100) if total_t > 0 else 0
+        total_pnl = df['pnl'].sum()
         gp = df[df['pnl'] > 0]['pnl'].sum()
         gl = abs(df[df['pnl'] < 0]['pnl'].sum())
-        pf = gp/gl if gl > 0 else 999
+        total_pf = gp/gl if gl > 0 else 999
         
-        return rows, wr, pnl, pf, t
+        months_html = ""
+        
+        for name, group in df.groupby('month_sort', sort=False):
+            # Sort each group descending by date
+            group = group.sort_values(by='date', ascending=False)
+            
+            m_t = len(group)
+            m_wins = len(group[group['outcome'] == 'tp'])
+            m_wr = (m_wins / m_t * 100) if m_t > 0 else 0
+            m_pnl = group['pnl'].sum()
+            m_gp = group[group['pnl'] > 0]['pnl'].sum()
+            m_gl = abs(group[group['pnl'] < 0]['pnl'].sum())
+            m_pf = m_gp/m_gl if m_gl > 0 else 999
+            
+            month_name = group['month_str'].iloc[0]
+            m_pnl_class = "success" if m_pnl > 0 else ("danger" if m_pnl < 0 else "")
+            
+            rows = ""
+            for _, row in group.iterrows():
+                outcome_class = "success" if row['outcome'] == 'tp' else "danger"
+                pnl_class = "success" if row['pnl'] > 0 else ("danger" if row['pnl'] < 0 else "")
+                direction_badge = f"<span class='badge {'success' if row['direction'] == 'long' else 'danger'}'>{row['direction'].upper()}</span>"
+                
+                rows += f"""
+                <tr>
+                    <td>{row['date'].strftime('%Y-%m-%d')}</td>
+                    <td>{direction_badge}</td>
+                    <td style="font-family: monospace;">{row['entry']:.2f}</td>
+                    <td style="font-family: monospace; color: var(--danger);">{row['sl']:.2f}</td>
+                    <td style="font-family: monospace; color: var(--success);">{row['tp']:.2f}</td>
+                    <td class="bold {pnl_class}">${row['pnl']:.2f}</td>
+                    <td><span class='badge {outcome_class}'>{row['outcome'].upper()}</span></td>
+                </tr>
+                """
+            
+            months_html += f"""
+            <details class="month-accordion" open>
+                <summary class="month-header">
+                    <div class="month-title">{month_name}</div>
+                    <div class="month-stats-mini">
+                        <span>Trades: <strong>{m_t}</strong></span>
+                        <span>WR: <strong style="color: {'var(--success)' if m_wr >= 40 else 'inherit'};">{m_wr:.1f}%</strong></span>
+                        <span>P&L: <strong class="{m_pnl_class}">${m_pnl:,.0f}</strong></span>
+                    </div>
+                </summary>
+                <div class="month-content">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Direction</th>
+                                    <th>Entry</th>
+                                    <th>Stop Loss</th>
+                                    <th>Take Profit</th>
+                                    <th>P&L</th>
+                                    <th>Outcome</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rows}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </details>
+            """
+            
+        return months_html, total_wr, total_pnl, total_pf, total_t
     except Exception as e:
         print(f"Error processing {csv_file}: {e}")
         return "", 0, 0, 0, 0
@@ -62,15 +118,15 @@ def generate_master_log():
     cutoff_date = max_date - pd.DateOffset(years=1)
     
     # Process both anchors
-    rows_13, wr_13, pnl_13, pf_13, t_13 = process_trades('trades_1300.csv', cutoff_date)
-    rows_12, wr_12, pnl_12, pf_12, t_12 = process_trades('trades_1255.csv', cutoff_date)
+    html_13, wr_13, pnl_13, pf_13, t_13 = process_trades('trades_1300.csv', cutoff_date)
+    html_12, wr_12, pnl_12, pf_12, t_12 = process_trades('trades_1255.csv', cutoff_date)
     
     html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Master Strategy Log (Past 1 Year)</title>
+    <title>Master Strategy Log (Monthly Split)</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@600;800&display=swap" rel="stylesheet">
     <style>
         :root {{
@@ -107,18 +163,69 @@ def generate_master_log():
         @keyframes fadeIn {{ from {{ opacity: 0; transform: translateY(10px); }} to {{ opacity: 1; transform: translateY(0); }} }}
         
         .summary-grid {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 3rem; }}
-        .stat-card {{ background: var(--surface); border: 1px solid var(--border); padding: 1.5rem; border-radius: 12px; text-align: center; }}
+        .stat-card {{ background: var(--surface); border: 1px solid var(--border); padding: 1.5rem; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }}
         .stat-label {{ color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; display: block; }}
         .stat-val {{ font-family: 'Outfit', sans-serif; font-size: 2.2rem; font-weight: 800; }}
         
-        .table-container {{ background: var(--surface); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }}
-        table {{ width: 100%; border-collapse: collapse; }}
-        th, td {{ padding: 1.2rem 1.5rem; text-align: left; border-bottom: 1px solid var(--border); }}
-        th {{ color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; background: rgba(0,0,0,0.2); font-weight: 600; }}
-        tr:last-child td {{ border-bottom: none; }}
-        tr:hover td {{ background: rgba(255,255,255,0.02); }}
+        /* Accordion Styles */
+        .month-accordion {{
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }}
+        .month-accordion:hover {{ border-color: var(--primary); }}
+        .month-header {{
+            padding: 1.2rem 1.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.02);
+            list-style: none; /* Hide default arrow */
+        }}
+        .month-header::-webkit-details-marker {{ display: none; }} /* Hide for Safari */
         
-        .badge {{ padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.5px; }}
+        .month-title {{
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--text);
+        }}
+        
+        .month-stats-mini {{
+            display: flex;
+            gap: 1.5rem;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            background: rgba(0,0,0,0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }}
+        
+        .month-content {{
+            padding: 0 1.5rem 1.5rem 1.5rem;
+            border-top: 1px solid var(--border);
+        }}
+        
+        .table-container {{
+            margin-top: 1rem;
+            background: var(--bg);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            overflow-x: auto;
+        }}
+        table {{ width: 100%; border-collapse: collapse; }}
+        th, td {{ padding: 1rem; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.9rem; }}
+        th {{ color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; background: rgba(0,0,0,0.3); font-weight: 600; }}
+        tr:last-child td {{ border-bottom: none; }}
+        tr:hover td {{ background: rgba(255,255,255,0.03); }}
+        
+        .badge {{ padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.5px; display: inline-block; }}
         .badge.success {{ background: rgba(16, 185, 129, 0.1); color: var(--success); }}
         .badge.danger {{ background: rgba(239, 68, 68, 0.1); color: var(--danger); }}
         .bold {{ font-weight: 600; }}
@@ -130,7 +237,7 @@ def generate_master_log():
 
 <div class="container">
     <h1>The Master Strategy Playbook</h1>
-    <div class="subtitle">1:3 RR • Exact Stop-Loss Documentation</div>
+    <div class="subtitle">1:3 RR • Monthly Tracking Documentation</div>
     <div class="filter-badge">Filters Active: Past 1 Year • Risk ≤ $4.00</div>
 
     <div class="tabs">
@@ -159,23 +266,8 @@ def generate_master_log():
             </div>
         </div>
         
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Direction</th>
-                        <th>Entry</th>
-                        <th>Stop Loss</th>
-                        <th>Take Profit</th>
-                        <th>P&L</th>
-                        <th>Outcome</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {rows_13}
-                </tbody>
-            </table>
+        <div class="monthly-breakdown">
+            {html_13}
         </div>
     </div>
 
@@ -200,23 +292,8 @@ def generate_master_log():
             </div>
         </div>
         
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Direction</th>
-                        <th>Entry</th>
-                        <th>Stop Loss</th>
-                        <th>Take Profit</th>
-                        <th>P&L</th>
-                        <th>Outcome</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {rows_12}
-                </tbody>
-            </table>
+        <div class="monthly-breakdown">
+            {html_12}
         </div>
     </div>
 </div>
@@ -236,6 +313,7 @@ def generate_master_log():
 """
     with open('master_strategy_log.html', 'w', encoding='utf-8') as f:
         f.write(html_content)
-    print("Generated master_strategy_log.html")
+    print("Generated master_strategy_log.html with Monthly grouping!")
 
-generate_master_log()
+if __name__ == "__main__":
+    generate_master_log()

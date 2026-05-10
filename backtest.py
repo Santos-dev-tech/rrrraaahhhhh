@@ -387,7 +387,7 @@ tr:hover{background:rgba(255,255,255,0.03)}
 
 def main():
     print("=" * 60)
-    print("  XAUUSD Breakout Backtester — GOD MODE")
+    print("  XAUUSD Breakout Backtester — AUTO PILOT")
     print("=" * 60)
     
     # Initialize MT5

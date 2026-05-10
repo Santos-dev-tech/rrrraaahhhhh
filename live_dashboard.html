@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XAUUSD Auto Pilot — Multi-Account Strategy Desk</title>
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+<!-- ===== ADD ACCOUNT MODAL ===== -->
+<div class="modal-overlay" id="add-modal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h2>➕ Add Trading Account</h2>
+            <button class="modal-close" onclick="closeAddModal()">✕</button>
+        </div>
+        <form id="add-form" onsubmit="handleAddAccount(event)">
+            <div class="form-group">
+                <label>Account Number</label>
+                <input type="text" id="inp-login" placeholder="e.g. 256469415" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="inp-password" placeholder="Your MT5 password" required>
+            </div>
+            <div class="form-group">
+                <label>Server</label>
+                <input type="text" id="inp-server" list="server-list" placeholder="Select or type server name..." value="Exness-MT5Trial">
+                <datalist id="server-list">
+                    <option value="Exness-MT5Trial"></option>
+                    <option value="Exness-MT5Trial2"></option>
+                    <option value="Exness-MT5Trial3"></option>
+                    <option value="Exness-MT5Trial4"></option>
+                    <option value="Exness-MT5Trial5"></option>
+                    <option value="Exness-MT5Trial6"></option>
+                    <option value="Exness-MT5Trial7"></option>
+                    <option value="Exness-MT5Trial8"></option>
+                    <option value="Exness-MT5Trial9"></option>
+                    <option value="Exness-MT5Trial10"></option>
+                    <option value="Exness-MT5Trial11"></option>
+                    <option value="Exness-MT5Trial12"></option>
+                    <option value="Exness-MT5Trial13"></option>
+                    <option value="Exness-MT5Trial14"></option>
+                    <option value="Exness-MT5Trial15"></option>
+                    <option value="Exness-MT5Trial16"></option>
+                    <option value="Exness-MT5Trial17"></option>
+                    <option value="Exness-MT5Trial18"></option>
+                    <option value="Exness-MT5Trial19"></option>
+                    <option value="Exness-MT5Trial20"></option>
+                    <option value="Exness-MT5Real"></option>
+                    <option value="Exness-MT5Real2"></option>
+                    <option value="Exness-MT5Real3"></option>
+                    <option value="Exness-MT5Real4"></option>
+                    <option value="Exness-MT5Real5"></option>
+                    <option value="Exness-MT5Real6"></option>
+                    <option value="Exness-MT5Real7"></option>
+                    <option value="Exness-MT5Real8"></option>
+                    <option value="Exness-MT5Real9"></option>
+                    <option value="Exness-MT5Real10"></option>
+                    <option value="Exness-MT5Real11"></option>
+                    <option value="Exness-MT5Real12"></option>
+                    <option value="Exness-MT5Real13"></option>
+                    <option value="Exness-MT5Real14"></option>
+                    <option value="Exness-MT5Real15"></option>
+                    <option value="Exness-MT5Real16"></option>
+                    <option value="Exness-MT5Real17"></option>
+                    <option value="Exness-MT5Real18"></option>
+                    <option value="Exness-MT5Real19"></option>
+                    <option value="Exness-MT5Real20"></option>
+                </datalist>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Strategy Anchor</label>
+                    <select id="inp-strategy">
+                        <option value="1300">13:00 UTC</option>
+                        <option value="1255">12:55 UTC</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Auto Pilot</label>
+                    <label class="switch" style="margin-top:6px">
+                        <input type="checkbox" id="inp-auto-trade" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            <button type="submit" class="btn-login" id="btn-add-acct">Add Account</button>
+            <div class="login-error" id="add-error"></div>
+        </form>
+    </div>
+</div>
+
+<!-- ===== MAIN APP ===== -->
+<nav class="top-nav">
+    <div class="nav-left">
+        <h1>⚡ XAUUSD Auto Pilot</h1>
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showPage('page-accounts', this)">Accounts</button>
+            <button class="nav-tab" onclick="showPage('page-live', this)">Live Chart</button>
+            <button class="nav-tab" onclick="showPage('page-stats', this)">1-Year Stats</button>
+        </div>
+    </div>
+    <div class="nav-right">
+        <span class="account-badge" id="nav-summary">No Accounts</span>
+        <button class="btn-add-nav" onclick="openAddModal()">+ Add Account</button>
+    </div>
+</nav>
+
+<!-- PAGE: Accounts Dashboard -->
+<div id="page-accounts" class="page-section active">
+    <div class="accounts-header">
+        <div>
+            <h2>Trading Accounts</h2>
+            <p class="text-muted">Manage your funded accounts. The server auto-trades on all accounts with Auto Pilot enabled.</p>
+        </div>
+        <button class="btn-login" onclick="openAddModal()" style="padding:10px 24px">+ Add Account</button>
+    </div>
+
+    <!-- Signal Summary Cards -->
+    <div class="signal-grid">
+        <div class="signal-card" id="sig-1300">
+            <div class="signal-label">13:00 UTC Signal</div>
+            <div class="signal-status" id="sig-1300-status">Waiting...</div>
+        </div>
+        <div class="signal-card" id="sig-1255">
+            <div class="signal-label">12:55 UTC Signal</div>
+            <div class="signal-status" id="sig-1255-status">Waiting...</div>
+        </div>
+        <div class="signal-card" id="sig-price">
+            <div class="signal-label">XAUUSD Live</div>
+            <div class="signal-status current-price" id="live-bid">--.---</div>
+            <div class="signal-sub">Spread: <span id="live-spread">--</span> pts</div>
+        </div>
+    </div>
+
+    <!-- Accounts Grid -->
+    <div class="accounts-grid" id="accounts-grid">
+        <div class="empty-accounts" id="empty-accounts">
+            <div class="empty-icon">🏦</div>
+            <h3>No Accounts Connected</h3>
+            <p>Add your MT5 funded accounts to start automated trading</p>
+            <button class="btn-login" onclick="openAddModal()" style="padding:10px 24px; margin-top:12px">+ Add First Account</button>
+        </div>
+    </div>
+</div>
+
+<!-- PAGE: Live Chart -->
+<div id="page-live" class="page-section">
+    <div class="live-header">
+        <span id="conn-status" style="color:#9ca3af; font-size:0.85rem;">Connecting...</span>
+        <div class="price-display">
+            <div class="current-price" id="live-bid-chart">--.---</div>
+            <div class="spread-badge">Spread: <span id="live-spread-chart">--</span> pts</div>
+        </div>
+    </div>
+    <div class="live-content">
+        <div class="chart-container" id="chart">
+            <div id="loading-overlay">
+                <div class="status-msg">Connecting to MT5...</div>
+                <div class="sub-msg">Waiting for market data</div>
+            </div>
+        </div>
+        <div class="sidebar">
+            <div class="card">
+                <h2>Strategy Signals</h2>
+                <div class="strat-section">
+                    <h3>13:00 UTC</h3>
+                    <div class="strategy-status-text">
+                        <span class="status-indicator" id="strat-1300-ind"></span>
+                        <span id="strat-1300-text">Waiting...</span>
+                    </div>
+                    <div class="data-row"><span class="label">High</span><span class="value" id="val-1300-high">--</span></div>
+                    <div class="data-row"><span class="label">Low</span><span class="value" id="val-1300-low">--</span></div>
+                </div>
+                <div class="strat-section" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border)">
+                    <h3>12:55 UTC</h3>
+                    <div class="strategy-status-text">
+                        <span class="status-indicator" id="strat-1255-ind"></span>
+                        <span id="strat-1255-text">Waiting...</span>
+                    </div>
+                    <div class="data-row"><span class="label">High</span><span class="value" id="val-1255-high">--</span></div>
+                    <div class="data-row"><span class="label">Low</span><span class="value" id="val-1255-low">--</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PAGE: 1-Year Backtest Stats -->
+<div id="page-stats" class="page-section">
+    <div id="stats-container"></div>
+</div>
+
+<script src="dashboard.js"></script>
+</body>
+</html>
