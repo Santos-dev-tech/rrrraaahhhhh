@@ -427,12 +427,44 @@ async function loadBacktestStats() {
     }
 }
 
+// ===== UTC CLOCK & COUNTDOWN =====
+function updateClock() {
+    const now = new Date();
+    const h = String(now.getUTCHours()).padStart(2, '0');
+    const m = String(now.getUTCMinutes()).padStart(2, '0');
+    const s = String(now.getUTCSeconds()).padStart(2, '0');
+    const el = document.getElementById('utc-clock');
+    if (el) el.innerText = `${h}:${m}:${s} UTC`;
+
+    // Countdown to next anchor (12:55 or 13:00 UTC)
+    const cdEl = document.getElementById('anchor-countdown');
+    if (!cdEl) return;
+    const utcMins = now.getUTCHours() * 60 + now.getUTCMinutes();
+    const targets = [12 * 60 + 55, 13 * 60]; // 12:55, 13:00
+    let next = null;
+    for (const t of targets) {
+        if (utcMins < t) { next = t; break; }
+    }
+    if (next !== null) {
+        const diff = (next - utcMins) * 60 - now.getUTCSeconds();
+        const dh = Math.floor(diff / 3600);
+        const dm = Math.floor((diff % 3600) / 60);
+        const ds = diff % 60;
+        const label = next === 775 ? '12:55' : '13:00';
+        cdEl.innerText = `⏱ ${label} in ${dh > 0 ? dh + 'h ' : ''}${dm}m ${ds}s`;
+    } else {
+        cdEl.innerText = '';
+    }
+}
+
 // ===== INIT =====
 window.addEventListener('DOMContentLoaded', () => {
     refreshAccounts();
     pollPrice();
     pollStrategy();
+    updateClock();
     pollPriceInterval = setInterval(pollPrice, 1000);
     pollStrategyInterval = setInterval(pollStrategy, 3000);
     pollAccountInterval = setInterval(refreshAccounts, 10000);
+    setInterval(updateClock, 1000);
 });
