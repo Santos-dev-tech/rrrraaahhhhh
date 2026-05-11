@@ -1,5 +1,4 @@
-const HOST = window.location.hostname === '' ? '127.0.0.1' : window.location.hostname;
-const BASE_URL = `http://${HOST}:5000/api`;
+const BASE_URL = '/api';
 
 let chart, candlestickSeries, anchorLines = {}, lastBid = 0;
 let pollPriceInterval, pollStrategyInterval, pollAccountInterval;
@@ -239,6 +238,8 @@ async function pollPrice() {
         const data = await res.json();
         if (data.market_closed) {
             setPrice('CLOSED', '#9ca3af', '--');
+            const cs = document.getElementById('conn-status');
+            if (cs) { cs.innerText = 'Market Closed'; cs.style.color = '#9ca3af'; }
             return;
         }
         if (data.error || !data.bid) return;
@@ -246,6 +247,13 @@ async function pollPrice() {
         const cls = data.bid > lastBid ? 'price-up' : data.bid < lastBid ? 'price-down' : '';
         lastBid = data.bid;
         setPrice(data.bid.toFixed(2), '', data.spread.toFixed(1), cls);
+
+        // Update connection status as soon as we get live data
+        const cs = document.getElementById('conn-status');
+        if (cs && !cs.innerText.includes('Live')) {
+            cs.innerText = 'Connected to MT5 — Live';
+            cs.style.color = '#10b981';
+        }
     } catch (err) {}
 }
 
