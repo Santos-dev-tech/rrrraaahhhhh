@@ -187,23 +187,40 @@ function showPage(pageId, btn) {
 // ===== CHART =====
 function initChart() {
     const container = document.getElementById('chart');
-    chart = LightweightCharts.createChart(container, {
-        layout: { textColor: '#d1d4dc', background: { type: 'solid', color: '#0b111a' } },
-        grid: { vertLines: { color: '#1f2937' }, horzLines: { color: '#1f2937' } },
-        crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-        rightPriceScale: { borderColor: '#374151' },
-        timeScale: { borderColor: '#374151', timeVisible: true, secondsVisible: false },
-    });
-    candlestickSeries = chart.addCandlestickSeries({
-        upColor: '#10b981', downColor: '#ef4444', borderVisible: false,
-        wickUpColor: '#10b981', wickDownColor: '#ef4444'
-    });
-    new ResizeObserver(entries => {
-        if (entries.length === 0) return;
-        const r = entries[0].contentRect;
-        chart.applyOptions({ height: r.height, width: r.width });
-    }).observe(container);
-    fetchInitialCandles();
+    try {
+        chart = LightweightCharts.createChart(container, {
+            layout: { textColor: '#d1d4dc', background: { type: 'solid', color: '#0b111a' } },
+            grid: { vertLines: { color: '#1f2937' }, horzLines: { color: '#1f2937' } },
+            crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+            rightPriceScale: { borderColor: '#374151' },
+            timeScale: { borderColor: '#374151', timeVisible: true, secondsVisible: false },
+        });
+
+        // v4 uses addSeries with type, v3 uses addCandlestickSeries
+        const seriesOpts = {
+            upColor: '#10b981', downColor: '#ef4444', borderVisible: false,
+            wickUpColor: '#10b981', wickDownColor: '#ef4444'
+        };
+        if (typeof chart.addCandlestickSeries === 'function') {
+            candlestickSeries = chart.addCandlestickSeries(seriesOpts);
+        } else {
+            candlestickSeries = chart.addSeries(LightweightCharts.CandlestickSeries, seriesOpts);
+        }
+
+        new ResizeObserver(entries => {
+            if (entries.length === 0) return;
+            const r = entries[0].contentRect;
+            chart.applyOptions({ height: r.height, width: r.width });
+        }).observe(container);
+        fetchInitialCandles();
+    } catch (err) {
+        console.error('[CHART INIT ERROR]', err);
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) {
+            overlay.querySelector('.status-msg').innerText = '⚠️ Chart Init Error';
+            overlay.querySelector('.sub-msg').innerText = err.message;
+        }
+    }
 }
 
 async function fetchInitialCandles() {
@@ -224,11 +241,27 @@ async function fetchInitialCandles() {
             setTimeout(fetchInitialCandles, 3000);
             return;
         }
-        candlestickSeries.setData(data);
+        // Deduplicate and sort by time to prevent chart errors
+        const seen = new Set();
+        const clean = data.filter(c => {
+            if (seen.has(c.time)) return false;
+            seen.add(c.time);
+            return true;
+        }).sort((a, b) => a.time - b.time);
+
+        candlestickSeries.setData(clean);
         document.getElementById('loading-overlay').style.display = 'none';
         document.getElementById('conn-status').innerText = 'Connected to MT5 — Live';
         document.getElementById('conn-status').style.color = '#10b981';
-    } catch (err) { setTimeout(fetchInitialCandles, 3000); }
+    } catch (err) {
+        console.error('[CANDLE FETCH ERROR]', err);
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) {
+            overlay.querySelector('.status-msg').innerText = '⚠️ Chart Error';
+            overlay.querySelector('.sub-msg').innerText = err.message || 'Retrying...';
+        }
+        setTimeout(fetchInitialCandles, 3000);
+    }
 }
 
 // ===== POLLING =====
