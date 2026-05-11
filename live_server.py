@@ -183,39 +183,55 @@ def compute_strategy(df, anchor_hour, anchor_minute):
     }
 
 
-def execute_on_account(acct, direction, sl, tp):
-    """Login to a specific account and execute a trade."""
-    try:
-        if not mt5.initialize():
-            return {"error": "MT5 init failed"}
-        if not mt5.login(acct['login'], password=acct['password'], server=acct['server']):
-            return {"error": f"Login failed: {mt5.last_error()}"}
-        
-        sym = "XAUUSD" if mt5.symbol_info("XAUUSD") else "XAUUSDm"
-        mt5.symbol_select(sym, True)
-        si = mt5.symbol_info(sym)
-        tick = mt5.symbol_info_tick(sym)
-        
-        order_type = mt5.ORDER_TYPE_BUY if direction == 'Long' else mt5.ORDER_TYPE_SELL
-        price = tick.ask if direction == 'Long' else tick.bid
-        cs = si.trade_contract_size
-        rpl = (price - sl) * cs if direction == 'Long' else (sl - price) * cs
-        if rpl <= 0: return {"error": "Invalid SL"}
-        
-        vol = round((4.0 / rpl) / si.volume_step) * si.volume_step
-        if vol < si.volume_min: vol = si.volume_min
-        
-        result = mt5.order_send({
-            "action": mt5.TRADE_ACTION_DEAL, "symbol": sym, "volume": float(vol),
-            "type": order_type, "price": float(price), "sl": float(sl), "tp": float(tp),
-            "deviation": 20, "magic": 130001, "comment": "AutoPilot Breakout",
-            "type_time": mt5.ORDER_TIME_GTC, "type_filling": mt5.ORDER_FILLING_IOC,
-        })
-        if result.retcode != mt5.TRADE_RETCODE_DONE:
-            return {"error": f"Order failed: {result.comment}"}
-        return {"status": "Success", "order": result.order, "volume": vol, "price": price, "direction": direction}
-    except Exception as e:
-        return {"error": str(e)}
+def execute_on_account(acct, direction, sl, tp, max_retries=3):
+    """Login to a specific account and execute a trade. Retries on AutoTrading disabled."""
+    for attempt in range(1, max_retries + 1):
+        try:
+            mt5.shutdown()
+            time.sleep(0.5)
+            if not mt5.initialize():
+                if attempt < max_retries:
+                    print(f"[RETRY {attempt}/{max_retries}] MT5 init failed, retrying...")
+                    time.sleep(2)
+                    continue
+                return {"error": "MT5 init failed after retries"}
+            if not mt5.login(acct['login'], password=acct['password'], server=acct['server']):
+                return {"error": f"Login failed: {mt5.last_error()}"}
+            
+            sym = "XAUUSD" if mt5.symbol_info("XAUUSD") else "XAUUSDm"
+            mt5.symbol_select(sym, True)
+            si = mt5.symbol_info(sym)
+            tick = mt5.symbol_info_tick(sym)
+            
+            order_type = mt5.ORDER_TYPE_BUY if direction == 'Long' else mt5.ORDER_TYPE_SELL
+            price = tick.ask if direction == 'Long' else tick.bid
+            cs = si.trade_contract_size
+            rpl = (price - sl) * cs if direction == 'Long' else (sl - price) * cs
+            if rpl <= 0: return {"error": "Invalid SL"}
+            
+            vol = round((4.0 / rpl) / si.volume_step) * si.volume_step
+            if vol < si.volume_min: vol = si.volume_min
+            
+            result = mt5.order_send({
+                "action": mt5.TRADE_ACTION_DEAL, "symbol": sym, "volume": float(vol),
+                "type": order_type, "price": float(price), "sl": float(sl), "tp": float(tp),
+                "deviation": 20, "magic": 130001, "comment": "AutoPilot Breakout",
+                "type_time": mt5.ORDER_TIME_GTC, "type_filling": mt5.ORDER_FILLING_IOC,
+            })
+            if result.retcode != mt5.TRADE_RETCODE_DONE:
+                # Retry if AutoTrading is disabled — user might enable it
+                if 'AutoTrading' in (result.comment or '') and attempt < max_retries:
+                    print(f"[RETRY {attempt}/{max_retries}] AutoTrading disabled, waiting 10s for user to enable...")
+                    time.sleep(10)
+                    continue
+                return {"error": f"Order failed: {result.comment}"}
+            return {"status": "Success", "order": result.order, "volume": vol, "price": price, "direction": direction}
+        except Exception as e:
+            if attempt < max_retries:
+                time.sleep(2)
+                continue
+            return {"error": str(e)}
+    return {"error": "Max retries exhausted"}
 
 
 def poll_loop():
@@ -262,18 +278,23 @@ def poll_loop():
                         
                         # Auto-execute on triggered accounts
                         today_str = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+                        now_utc_exec = datetime.now(timezone.utc)
                         
-                        with state_lock:
-                            accts_snapshot = list(accounts)
-                        
-                        for acct in accts_snapshot:
-                            strat_key = acct['strategy']
-                            sig = sig_1300 if strat_key == '1300' else sig_1255
-                            
-                            if acct.get('last_trade_date') == today_str:
-                                continue  # Already traded today
-                            
-                            if sig.get('status') == 'Breakout Triggered!' and acct.get('auto_trade'):
+                        # MONDAY FILTER: Skip execution on Mondays (weekday 0)
+                        if now_utc_exec.weekday() == 0:
+                            pass  # Don't execute — Mondays excluded per backtest results
+                        else:
+                          with state_lock:
+                              accts_snapshot = list(accounts)
+                          
+                          for acct in accts_snapshot:
+                              strat_key = acct['strategy']
+                              sig = sig_1300 if strat_key == '1300' else sig_1255
+                              
+                              if acct.get('last_trade_date') == today_str:
+                                  continue  # Already traded today
+                              
+                              if sig.get('status') == 'Breakout Triggered!' and acct.get('auto_trade'):
                                 result = execute_on_account(acct, sig['direction'], sig['sl'], sig['tp'])
                                 with state_lock:
                                     idx = next((i for i, a in enumerate(accounts) if a['login'] == acct['login']), None)
@@ -292,6 +313,7 @@ def poll_loop():
                                 mt5.initialize()
                     
                     # --- 21:00 UTC Auto-Close ---
+                    global eod_closed_today
                     now_utc = datetime.now(timezone.utc)
                     if now_utc.hour >= 21 and eod_closed_today != today_str:
                         eod_closed_today = today_str
