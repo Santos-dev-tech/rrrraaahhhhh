@@ -6,7 +6,7 @@
     <title>XAUUSD Auto Pilot — Multi-Account Strategy Desk</title>
     <script src="https://unpkg.com/lightweight-charts@4.2.2/dist/lightweight-charts.standalone.production.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="dashboard.css?v=3.0">
 </head>
 <body>
 
@@ -87,6 +87,10 @@
                         <span class="slider"></span>
                     </label>
                 </div>
+            </div>
+            <div class="form-group" style="margin-top:-8px; margin-bottom:20px;">
+                <label>Risk Amount ($)</label>
+                <input type="number" id="inp-risk" step="0.5" placeholder="e.g. 50" value="4.0" required style="width:100px;">
             </div>
             <button type="submit" class="btn-login" id="btn-add-acct">Add Account</button>
             <div class="login-error" id="add-error"></div>

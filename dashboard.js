@@ -27,7 +27,8 @@ async function handleAddAccount(e) {
         password: document.getElementById('inp-password').value,
         server: document.getElementById('inp-server').value,
         strategy: document.getElementById('inp-strategy').value,
-        auto_trade: document.getElementById('inp-auto-trade').checked
+        auto_trade: document.getElementById('inp-auto-trade').checked,
+        risk_amount: parseFloat(document.getElementById('inp-risk').value) || 4.0
     };
 
     try {
@@ -104,6 +105,10 @@ function renderAccounts(accounts) {
                     <span class="acct-stat-value">${stratLabel} UTC</span>
                 </div>
                 <div class="acct-stat">
+                    <span class="acct-stat-label">Risk</span>
+                    <span class="acct-stat-value">$${(a.risk_amount || 4.0).toFixed(2)}</span>
+                </div>
+                <div class="acct-stat">
                     <span class="acct-stat-label">Equity</span>
                     <span class="acct-stat-value">$${(a.equity || 0).toFixed(2)}</span>
                 </div>
@@ -115,6 +120,7 @@ function renderAccounts(accounts) {
             <div class="acct-footer">
                 <span class="acct-trade-status">${lastTrade}</span>
                 <div class="acct-actions">
+                    <button class="btn-sm-exec" onclick="testTrade(${a.login})" title="Test Trade (0.01 lot, 5s)" style="background:#8b5cf6">🧪</button>
                     <button class="btn-sm-exec" onclick="manualExecute(${a.login})" title="Manual Execute">▶</button>
                     <button class="btn-sm-remove" onclick="removeAccount(${a.login})" title="Remove">✕</button>
                 </div>
@@ -173,8 +179,31 @@ async function manualExecute(login) {
     } catch (err) { alert('Network error'); }
 }
 
+async function testTrade(login) {
+    if (!confirm(`🧪 TEST TRADE on #${login}?\n\nThis will open 0.01 lot BUY, wait 5 seconds, then close it.\nUsed to verify MT5 execution works.`)) return;
+    try {
+        const res = await fetch(`${BASE_URL}/test_trade`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ login })
+        });
+        const data = await res.json();
+        if (data.error) alert(`❌ Test failed: ${data.error}`);
+        else alert(`✅ TEST PASSED!\n\nTicket: #${data.ticket}\nOpen: ${data.open_price}\nClose: ${data.close_price}\nPnL: ~$${data.pnl_approx}\n\n${data.message}`);
+        refreshAccounts();
+    } catch (err) { alert('Network error'); }
+}
+
 // ===== NAVIGATION =====
 function showPage(pageId, btn) {
+    if (document.startViewTransition) {
+        document.startViewTransition(() => updateDOM(pageId, btn));
+    } else {
+        updateDOM(pageId, btn);
+    }
+}
+
+function updateDOM(pageId, btn) {
     document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
     document.getElementById(pageId).classList.add('active');
@@ -313,18 +342,29 @@ async function pollStrategy() {
             const data = await res.json();
             const label = anchor === '1255' ? '12:55' : '13:00';
 
+            // Detect state change to force stats refresh
+            if (!window._lastStatus) window._lastStatus = {};
+            if (window._lastStatus[anchor] && window._lastStatus[anchor] !== data.status && data.status.includes('Triggered')) {
+                // Status changed to Triggered -> Trade fired! Force refresh stats
+                window._statsLoaded = false;
+                if (document.getElementById('page-stats').classList.contains('active')) {
+                    loadBacktestStats();
+                }
+            }
+            window._lastStatus[anchor] = data.status;
+
             // Update accounts page signal cards
             const sigStatus = document.getElementById(`sig-${anchor}-status`);
             if (sigStatus) {
                 if (data.status.includes('Triggered')) {
                     sigStatus.innerText = `🔥 ${data.direction} @ ${data.entry_price.toFixed(2)}`;
-                    sigStatus.style.color = data.direction === 'Long' ? '#10b981' : '#ef4444';
+                    sigStatus.style.color = data.direction === 'Long' ? 'var(--success)' : 'var(--danger)';
                 } else if (data.status.includes('Watching')) {
                     sigStatus.innerText = `👀 H:${data.anchor_high.toFixed(2)} L:${data.anchor_low.toFixed(2)}`;
-                    sigStatus.style.color = '#3b82f6';
+                    sigStatus.style.color = 'var(--primary)';
                 } else {
                     sigStatus.innerText = data.status;
-                    sigStatus.style.color = '#9ca3af';
+                    sigStatus.style.color = 'var(--text-muted)';
                 }
             }
 

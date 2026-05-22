@@ -6,7 +6,7 @@ echo ==========================================
 
 :: Start the Python live server in background
 echo [1/2] Starting Live Server on port 5000...
-start /min "AutoPilot-Server" cmd /c "cd /d %~dp0 && python live_server.py"
+start /min "AutoPilot-Server" cmd /c "cd /d %~dp0 && py live_server.py"
 
 :: Wait for server to boot
 timeout /t 5 /nobreak >nul
