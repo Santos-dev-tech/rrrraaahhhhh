@@ -30,8 +30,8 @@ def get_terminal_path(server_name):
     server_lower = server_name.lower()
     if "blueguardian" in server_lower:
         return r"C:\Program Files\Blue Guardian MT5 Terminal\terminal64.exe"
-    elif "fundednext" in server_lower or "nlf" in server_lower:
-        # Use EXNESS terminal as the dedicated terminal for FundedNext
+    elif "fundednext" in server_lower or "nlf" in server_lower or "next level" in server_lower or "nextlevel" in server_lower:
+        # Use EXNESS terminal as the dedicated terminal for FundedNext & Next Level Funded
         return r"C:\Program Files\MetaTrader 5 EXNESS\terminal64.exe"
     else:
         # Use Vanilla terminal for MavenTrade
@@ -53,7 +53,7 @@ def save_accounts():
         data = []
         for a in accounts:
             data.append({
-                "login": a['login'], "password": a['password'], "server": a['server'],
+                "login": a['login'], "password": a.get('password', ''), "server": a['server'],
                 "strategy": a['strategy'], "auto_trade": a['auto_trade'],
                 "name": a.get('name', ''), "balance": a.get('balance', 0),
                 "equity": a.get('equity', 0), "leverage": a.get('leverage', 0),
@@ -75,6 +75,7 @@ def load_accounts():
             data = json.load(f)
         with state_lock:
             for a in data:
+                a.setdefault('password', '')
                 a.setdefault('last_trade_date', None)
                 a.setdefault('last_trade_result', None)
                 a.setdefault('risk_amount', 4.0)
@@ -219,7 +220,7 @@ def execute_on_account(acct, direction, sl, tp, max_retries=3):
     payload = {
         "terminal_path": t_path,
         "login": acct['login'],
-        "password": acct['password'],
+        "password": acct.get('password', ''),
         "server": acct['server'],
         "direction": direction,
         "sl": sl,
@@ -325,44 +326,127 @@ def poll_loop():
                             with state_lock:
                                 accts_snapshot = list(accounts)
                             
-                            for acct in accts_snapshot:
-                                strat_key = acct['strategy']
-                                sig = sig_1300 if strat_key == '1300' else sig_1255
-                                
-                                if acct.get('last_trade_date') == today_str:
-                                    continue
-                                
-                                if sig.get('status') == 'Breakout Triggered!' and acct.get('auto_trade'):
-                                    # Staleness Check (must be within 10 minutes of breakout candle timestamp)
-                                    latest_chart_time = df.iloc[-1]['time']
-                                    sig_time = pd.to_datetime(sig.get('trigger_time'), unit='s')
-                                    time_diff_mins = (latest_chart_time - sig_time).total_seconds() / 60.0
+                            # Detect active Master (Blue Guardian with auto_trade=True)
+                            master_acct = None
+                            for a in accts_snapshot:
+                                if "blueguardian" in a['server'].lower() and a.get('auto_trade'):
+                                    master_acct = a
+                                    break
+                            
+                            if master_acct is not None:
+                                # Master/Client Copy Trading Mode
+                                if master_acct.get('last_trade_date') != today_str:
+                                    strat_key = master_acct['strategy']
+                                    sig = sig_1300 if strat_key == '1300' else sig_1255
                                     
-                                    if time_diff_mins > 10.0:
-                                        # Stale breakout trigger. Mark as processed for today so we don't retry or spam.
+                                    if sig.get('status') == 'Breakout Triggered!':
+                                        # Staleness Check (must be within 10 minutes of breakout candle timestamp)
+                                        latest_chart_time = df.iloc[-1]['time']
+                                        sig_time = pd.to_datetime(sig.get('trigger_time'), unit='s')
+                                        time_diff_mins = (latest_chart_time - sig_time).total_seconds() / 60.0
+                                        
+                                        if time_diff_mins > 10.0:
+                                            with state_lock:
+                                                # Mark master and ALL clients as skipped (stale breakout) for today
+                                                for a in accounts:
+                                                    if a.get('last_trade_date') != today_str:
+                                                        a['last_trade_date'] = today_str
+                                                        a['last_trade_result'] = {"error": f"Breakout stale by {time_diff_mins:.1f} mins (limit 10 mins)"}
+                                            print(f"[AUTO-TRADE] Master stale {strat_key} breakout: Skipped all copy trading for today (stale by {time_diff_mins:.1f} mins)")
+                                        else:
+                                            # Execute on Master Account
+                                            print(f"[AUTO-TRADE] Master execution starting for #{master_acct['login']}...")
+                                            master_res = execute_on_account(master_acct, sig['direction'], sig['sl'], sig['tp'])
+                                            master_success = False
+                                            
+                                            with state_lock:
+                                                idx = next((i for i, a in enumerate(accounts) if a['login'] == master_acct['login']), None)
+                                                if idx is not None:
+                                                    accounts[idx]['last_trade_date'] = today_str
+                                                    accounts[idx]['last_trade_result'] = master_res
+                                                    if master_res.get('status') == 'Success':
+                                                        master_success = True
+                                                        log_trade(master_acct['login'], strat_key, sig['direction'], master_res['price'], sig['sl'], sig['tp'], master_res['volume'], master_res['order'], 'SUCCESS', 'MASTER')
+                                                        print(f"[AUTO-TRADE] Master #{master_acct['login']} executed successfully: {sig['direction']} @ {master_res['price']:.2f}")
+                                                    else:
+                                                        log_trade(master_acct['login'], strat_key, sig['direction'], sig.get('entry_price', 0), sig['sl'], sig['tp'], 0, 0, 'FAILED', f"MASTER FAIL: {master_res.get('error', '')}")
+                                                        print(f"[AUTO-TRADE FAIL] Master #{master_acct['login']} failed: {master_res.get('error')}")
+                                            
+                                            if master_success:
+                                                # Master succeeded, copy to all client accounts
+                                                print(f"[AUTO-TRADE] Master trade succeeded! Copying to all active clients...")
+                                                for client_acct in accts_snapshot:
+                                                    if client_acct['login'] == master_acct['login']:
+                                                        continue
+                                                    if not client_acct.get('auto_trade'):
+                                                        continue
+                                                    if client_acct.get('last_trade_date') == today_str:
+                                                        continue
+                                                    
+                                                    print(f"[AUTO-TRADE] Copying trade to client #{client_acct['login']}...")
+                                                    client_res = execute_on_account(client_acct, sig['direction'], sig['sl'], sig['tp'])
+                                                    with state_lock:
+                                                        c_idx = next((i for i, a in enumerate(accounts) if a['login'] == client_acct['login']), None)
+                                                        if c_idx is not None:
+                                                            accounts[c_idx]['last_trade_date'] = today_str
+                                                            accounts[c_idx]['last_trade_result'] = client_res
+                                                            if client_res.get('status') == 'Success':
+                                                                log_trade(client_acct['login'], client_acct['strategy'], sig['direction'], client_res['price'], sig['sl'], sig['tp'], client_res['volume'], client_res['order'], 'SUCCESS', 'CLIENT_COPY')
+                                                                print(f"[AUTO-TRADE] Client #{client_acct['login']} successfully copied trade: {sig['direction']} @ {client_res['price']:.2f}")
+                                                            else:
+                                                                log_trade(client_acct['login'], client_acct['strategy'], sig['direction'], sig.get('entry_price', 0), sig['sl'], sig['tp'], 0, 0, 'FAILED', f"CLIENT COPY FAIL: {client_res.get('error', '')}")
+                                                                print(f"[AUTO-TRADE FAIL] Client #{client_acct['login']} copy failed: {client_res.get('error')}")
+                                            else:
+                                                # Master failed, skip clients to protect capital
+                                                print(f"[AUTO-TRADE] Master trade failed/refused. Skipping all client trades to protect capital.")
+                                                with state_lock:
+                                                    for client_acct in accounts:
+                                                        if client_acct['login'] == master_acct['login']:
+                                                            continue
+                                                        if client_acct.get('last_trade_date') != today_str:
+                                                            client_acct['last_trade_date'] = today_str
+                                                            client_acct['last_trade_result'] = {"error": "Skipped: Master account trade failed"}
+                                            
+                                            mt5.initialize(path=TERMINAL_PATH, timeout=120000)  # Re-init after account switches
+                            else:
+                                # Independent Strategy Execution Mode (Fallback)
+                                for acct in accts_snapshot:
+                                    strat_key = acct['strategy']
+                                    sig = sig_1300 if strat_key == '1300' else sig_1255
+                                    
+                                    if acct.get('last_trade_date') == today_str:
+                                        continue
+                                    
+                                    if sig.get('status') == 'Breakout Triggered!' and acct.get('auto_trade'):
+                                        # Staleness Check (must be within 10 minutes of breakout candle timestamp)
+                                        latest_chart_time = df.iloc[-1]['time']
+                                        sig_time = pd.to_datetime(sig.get('trigger_time'), unit='s')
+                                        time_diff_mins = (latest_chart_time - sig_time).total_seconds() / 60.0
+                                        
+                                        if time_diff_mins > 10.0:
+                                            with state_lock:
+                                                idx = next((i for i, a in enumerate(accounts) if a['login'] == acct['login']), None)
+                                                if idx is not None:
+                                                    accounts[idx]['last_trade_date'] = today_str
+                                                    accounts[idx]['last_trade_result'] = {"error": f"Breakout stale by {time_diff_mins:.1f} mins (limit 10 mins)"}
+                                            print(f"[AUTO-TRADE] #{acct['login']}: Skipped stale {strat_key} breakout (stale by {time_diff_mins:.1f} mins)")
+                                            continue
+
+                                        result = execute_on_account(acct, sig['direction'], sig['sl'], sig['tp'])
                                         with state_lock:
                                             idx = next((i for i, a in enumerate(accounts) if a['login'] == acct['login']), None)
                                             if idx is not None:
-                                                accounts[idx]['last_trade_date'] = today_str
-                                                accounts[idx]['last_trade_result'] = {"error": f"Breakout stale by {time_diff_mins:.1f} mins (limit 10 mins)"}
-                                        print(f"[AUTO-TRADE] #{acct['login']}: Skipped stale {strat_key} breakout (stale by {time_diff_mins:.1f} mins)")
-                                        continue
-
-                                    result = execute_on_account(acct, sig['direction'], sig['sl'], sig['tp'])
-                                    with state_lock:
-                                        idx = next((i for i, a in enumerate(accounts) if a['login'] == acct['login']), None)
-                                        if idx is not None:
-                                            if result.get('status') == 'Success':
-                                                accounts[idx]['last_trade_date'] = today_str
-                                                accounts[idx]['last_trade_result'] = result
-                                                log_trade(acct['login'], strat_key, sig['direction'], result['price'], sig['sl'], sig['tp'], result['volume'], result['order'], 'SUCCESS')
-                                                print(f"[AUTO-TRADE] #{acct['login']} {sig['direction']} @ {result['price']:.2f}, Vol: {result['volume']}")
-                                            else:
-                                                accounts[idx]['last_trade_date'] = today_str  # Mark as attempted for today to stop spamming
-                                                accounts[idx]['last_trade_result'] = result
-                                                log_trade(acct['login'], strat_key, sig['direction'], sig.get('entry_price', 0), sig['sl'], sig['tp'], 0, 0, 'FAILED', result.get('error', ''))
-                                                print(f"[AUTO-TRADE FAIL] #{acct['login']}: {result.get('error')}")
-                                    mt5.initialize(path=TERMINAL_PATH, timeout=120000)  # Re-init after account switch
+                                                if result.get('status') == 'Success':
+                                                    accounts[idx]['last_trade_date'] = today_str
+                                                    accounts[idx]['last_trade_result'] = result
+                                                    log_trade(acct['login'], strat_key, sig['direction'], result['price'], sig['sl'], sig['tp'], result['volume'], result['order'], 'SUCCESS')
+                                                    print(f"[AUTO-TRADE] #{acct['login']} {sig['direction']} @ {result['price']:.2f}, Vol: {result['volume']}")
+                                                else:
+                                                    accounts[idx]['last_trade_date'] = today_str  # Mark as attempted for today to stop spamming
+                                                    accounts[idx]['last_trade_result'] = result
+                                                    log_trade(acct['login'], strat_key, sig['direction'], sig.get('entry_price', 0), sig['sl'], sig['tp'], 0, 0, 'FAILED', result.get('error', ''))
+                                                    print(f"[AUTO-TRADE FAIL] #{acct['login']}: {result.get('error')}")
+                                        mt5.initialize(path=TERMINAL_PATH, timeout=120000)  # Re-init after account switch
                         
                         # --- 21:00 UTC Auto-Close ---
                         now_utc = datetime.now(timezone.utc)

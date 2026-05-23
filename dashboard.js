@@ -75,6 +75,9 @@ function renderAccounts(accounts) {
         return;
     }
 
+    // Detect if there is an active Master account
+    const hasActiveMaster = accounts.some(a => a.server.toLowerCase().includes('blueguardian') && a.auto_trade);
+
     summary.innerText = `${accounts.length} Account${accounts.length > 1 ? 's' : ''} Active`;
     grid.innerHTML = accounts.map(a => {
         const stratLabel = a.strategy === '1255' ? '12:55' : '13:00';
@@ -86,6 +89,18 @@ function renderAccounts(accounts) {
                 : `❌ ${a.last_trade_result.error || 'Failed'}`)
             : 'No trades today';
 
+        const isMaster = a.server.toLowerCase().includes('blueguardian') && a.auto_trade;
+        const isCopying = hasActiveMaster && a.auto_trade && !a.server.toLowerCase().includes('blueguardian');
+        
+        let roleBadge = '';
+        if (isMaster) {
+            roleBadge = `<span class="role-badge role-master">👑 MASTER</span>`;
+        } else if (isCopying) {
+            roleBadge = `<span class="role-badge role-copying">👥 COPYING</span>`;
+        } else if (a.auto_trade) {
+            roleBadge = `<span class="role-badge role-solo">👤 INDEPENDENT</span>`;
+        }
+
         return `
         <div class="account-card">
             <div class="acct-header">
@@ -93,7 +108,10 @@ function renderAccounts(accounts) {
                     <span class="acct-num">#${a.login}</span>
                     <span class="acct-name">${a.name || a.server}</span>
                 </div>
-                <span class="acct-badge ${autoClass}" onclick="toggleAuto(${a.login})">${autoText}</span>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                    ${roleBadge}
+                    <span class="acct-badge ${autoClass}" onclick="toggleAuto(${a.login})">${autoText}</span>
+                </div>
             </div>
             <div class="acct-body">
                 <div class="acct-stat">

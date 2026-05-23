@@ -127,6 +127,58 @@ body::after {
 .acct-badge.auto-on:hover { background: rgba(16,185,129,0.2); transform: scale(1.05); }
 .acct-badge.auto-off { background: rgba(255,255,255,0.03); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); }
 .acct-badge.auto-off:hover { background: rgba(255,255,255,0.08); transform: scale(1.05); }
+
+/* ===== ROLE BADGES ===== */
+.role-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    user-select: none;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.role-master {
+    background: rgba(245, 158, 11, 0.12);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
+    text-shadow: 0 0 4px rgba(245, 158, 11, 0.3);
+}
+.role-master:hover {
+    background: rgba(245, 158, 11, 0.2);
+    transform: scale(1.05);
+    box-shadow: 0 0 18px rgba(245, 158, 11, 0.35);
+}
+.role-copying {
+    background: rgba(0, 229, 255, 0.12);
+    color: #00e5ff;
+    border: 1px solid rgba(0, 229, 255, 0.3);
+    box-shadow: 0 0 12px rgba(0, 229, 255, 0.2);
+    text-shadow: 0 0 4px rgba(0, 229, 255, 0.3);
+}
+.role-copying:hover {
+    background: rgba(0, 229, 255, 0.2);
+    transform: scale(1.05);
+    box-shadow: 0 0 18px rgba(0, 229, 255, 0.35);
+}
+.role-solo {
+    background: rgba(139, 92, 246, 0.12);
+    color: #a78bfa;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.15);
+    text-shadow: 0 0 4px rgba(139, 92, 246, 0.2);
+}
+.role-solo:hover {
+    background: rgba(139, 92, 246, 0.2);
+    transform: scale(1.05);
+    box-shadow: 0 0 18px rgba(139, 92, 246, 0.3);
+}
+
 .acct-body { display: grid; grid-template-columns: 1fr 1fr; gap: 0; padding: 0; }
 .acct-stat { padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.2s; }
 .acct-stat:hover { background: rgba(255,255,255,0.02); }
