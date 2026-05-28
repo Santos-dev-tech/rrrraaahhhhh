@@ -4,6 +4,11 @@ echo ==========================================
 echo   XAUUSD AutoPilot - Starting Services
 echo ==========================================
 
+:: Kill any existing background instances to prevent port conflicts
+echo Cleaning up old background instances...
+taskkill /F /IM ngrok.exe >nul 2>&1
+taskkill /F /IM py.exe >nul 2>&1
+
 :: Start the Python live server in background
 echo [1/2] Starting Live Server on port 5000...
 start /min "AutoPilot-Server" cmd /c "cd /d %~dp0 && py live_server.py"

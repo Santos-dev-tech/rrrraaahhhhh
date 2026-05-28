@@ -2,6 +2,7 @@ const BASE_URL = '/api';
 
 let chart, candlestickSeries, anchorLines = {}, lastBid = 0;
 let pollPriceInterval, pollStrategyInterval, pollAccountInterval;
+let activeSignals = { "1300": null, "1255": null };
 
 // ===== ADD ACCOUNT MODAL =====
 function openAddModal() {
@@ -80,7 +81,7 @@ function renderAccounts(accounts) {
 
     summary.innerText = `${accounts.length} Account${accounts.length > 1 ? 's' : ''} Active`;
     grid.innerHTML = accounts.map(a => {
-        const stratLabel = a.strategy === '1255' ? '12:55' : '13:00';
+        const stratLabel = a.strategy === '1255' ? '12:55 UTC' : a.strategy === '1300' ? '13:00 UTC' : 'Both (12:55 & 13:00)';
         const autoClass = a.auto_trade ? 'auto-on' : 'auto-off';
         const autoText = a.auto_trade ? '⚡ AUTO PILOT' : 'MANUAL';
         const lastTrade = a.last_trade_result
@@ -99,6 +100,62 @@ function renderAccounts(accounts) {
             roleBadge = `<span class="role-badge role-copying">👥 COPYING</span>`;
         } else if (a.auto_trade) {
             roleBadge = `<span class="role-badge role-solo">👤 INDEPENDENT</span>`;
+        }
+        
+        let signalInfoHtml = '';
+        let matchedSignal = null;
+        let pendingSignal = null;
+        const stratKeys = a.strategy === 'both' ? ['1300', '1255'] : [a.strategy];
+        for (const sk of stratKeys) {
+            const sig = activeSignals[sk];
+            if (!sig || !sig.status) continue;
+            if (sig.status.includes('Triggered')) { matchedSignal = sig; break; }
+            if (sig.status.includes('Pending Signal')) { pendingSignal = sig; break; }
+        }
+
+        if (matchedSignal) {
+            const sl_dist = Math.abs(matchedSignal.entry_price - matchedSignal.sl) * 100;
+            let lot_size = sl_dist > 0 ? (a.risk_amount / sl_dist).toFixed(2) : '0.01';
+            if (parseFloat(lot_size) < 0.01) lot_size = '0.01';
+            
+            signalInfoHtml = `
+            <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 6px; padding: 10px; margin-top: 10px; font-size: 0.85rem;">
+                <div style="font-weight: 600; color: #3b82f6; margin-bottom: 6px;">🔥 Active ${matchedSignal.direction} Signal</div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><span>Entry:</span> <span>${matchedSignal.entry_price.toFixed(2)}</span></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><span>Stop Loss:</span> <span style="color: #ef4444">${matchedSignal.sl.toFixed(2)}</span></div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><span>Take Profit:</span> <span style="color: #10b981">${matchedSignal.tp.toFixed(2)}</span></div>
+                <div style="display: flex; justify-content: space-between; margin-top: 6px; font-weight: 600; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 6px;">
+                    <span>Calculated Lot:</span> <span style="color: #fff">${lot_size} Lots</span>
+                </div>
+            </div>`;
+        } else if (pendingSignal) {
+            const long_sl_dist = Math.abs(pendingSignal.long_entry - pendingSignal.long_sl) * 100;
+            let long_lot = long_sl_dist > 0 ? (a.risk_amount / long_sl_dist).toFixed(2) : '0.01';
+            if (parseFloat(long_lot) < 0.01) long_lot = '0.01';
+            const short_sl_dist = Math.abs(pendingSignal.short_sl - pendingSignal.short_entry) * 100;
+            let short_lot = short_sl_dist > 0 ? (a.risk_amount / short_sl_dist).toFixed(2) : '0.01';
+            if (parseFloat(short_lot) < 0.01) short_lot = '0.01';
+
+            signalInfoHtml = `
+            <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 6px; padding: 10px; margin-top: 10px; font-size: 0.82rem;">
+                <div style="font-weight: 700; color: #f59e0b; margin-bottom: 8px; font-size: 0.9rem;">📋 Place Orders Now — Anchor Closed</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div style="background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); border-radius: 5px; padding: 8px;">
+                        <div style="font-weight: 600; color: #10b981; margin-bottom: 4px;">⬆ BUY STOP</div>
+                        <div style="display:flex;justify-content:space-between;"><span>Entry:</span><span>${pendingSignal.long_entry.toFixed(2)}</span></div>
+                        <div style="display:flex;justify-content:space-between;"><span>SL:</span><span style="color:#ef4444">${pendingSignal.long_sl.toFixed(2)}</span></div>
+                        <div style="display:flex;justify-content:space-between;"><span>TP:</span><span style="color:#10b981">${pendingSignal.long_tp.toFixed(2)}</span></div>
+                        <div style="display:flex;justify-content:space-between;margin-top:4px;font-weight:600;border-top:1px solid rgba(255,255,255,0.1);padding-top:4px;"><span>Lot:</span><span>${long_lot}</span></div>
+                    </div>
+                    <div style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 5px; padding: 8px;">
+                        <div style="font-weight: 600; color: #ef4444; margin-bottom: 4px;">⬇ SELL STOP</div>
+                        <div style="display:flex;justify-content:space-between;"><span>Entry:</span><span>${pendingSignal.short_entry.toFixed(2)}</span></div>
+                        <div style="display:flex;justify-content:space-between;"><span>SL:</span><span style="color:#ef4444">${pendingSignal.short_sl.toFixed(2)}</span></div>
+                        <div style="display:flex;justify-content:space-between;"><span>TP:</span><span style="color:#10b981">${pendingSignal.short_tp.toFixed(2)}</span></div>
+                        <div style="display:flex;justify-content:space-between;margin-top:4px;font-weight:600;border-top:1px solid rgba(255,255,255,0.1);padding-top:4px;"><span>Lot:</span><span>${short_lot}</span></div>
+                    </div>
+                </div>
+            </div>`;
         }
 
         return `
@@ -120,7 +177,7 @@ function renderAccounts(accounts) {
                 </div>
                 <div class="acct-stat">
                     <span class="acct-stat-label">Strategy</span>
-                    <span class="acct-stat-value">${stratLabel} UTC</span>
+                    <span class="acct-stat-value">${stratLabel}</span>
                 </div>
                 <div class="acct-stat">
                     <span class="acct-stat-label">Risk</span>
@@ -134,6 +191,7 @@ function renderAccounts(accounts) {
                     <span class="acct-stat-label">Last Trade</span>
                     <span class="acct-stat-value" style="font-size:0.75rem">${a.last_trade_date || '—'}</span>
                 </div>
+                ${signalInfoHtml}
             </div>
             <div class="acct-footer">
                 <span class="acct-trade-status">${lastTrade}</span>
@@ -358,16 +416,21 @@ async function pollStrategy() {
         try {
             const res = await fetch(`${BASE_URL}/strategy?anchor=${anchor}`);
             const data = await res.json();
+            activeSignals[anchor] = data;
             const label = anchor === '1255' ? '12:55' : '13:00';
 
             // Detect state change to force stats refresh
             if (!window._lastStatus) window._lastStatus = {};
-            if (window._lastStatus[anchor] && window._lastStatus[anchor] !== data.status && data.status.includes('Triggered')) {
-                // Status changed to Triggered -> Trade fired! Force refresh stats
-                window._statsLoaded = false;
-                if (document.getElementById('page-stats').classList.contains('active')) {
-                    loadBacktestStats();
+            if (window._lastStatus[anchor] && window._lastStatus[anchor] !== data.status) {
+                if (data.status.includes('Triggered')) {
+                    // Status changed to Triggered -> Trade fired! Force refresh stats
+                    window._statsLoaded = false;
+                    if (document.getElementById('page-stats').classList.contains('active')) {
+                        loadBacktestStats();
+                    }
                 }
+                // Any status change -> refresh accounts to show new signal info
+                refreshAccounts();
             }
             window._lastStatus[anchor] = data.status;
 
@@ -377,9 +440,9 @@ async function pollStrategy() {
                 if (data.status.includes('Triggered')) {
                     sigStatus.innerText = `🔥 ${data.direction} @ ${data.entry_price.toFixed(2)}`;
                     sigStatus.style.color = data.direction === 'Long' ? 'var(--success)' : 'var(--danger)';
-                } else if (data.status.includes('Watching')) {
-                    sigStatus.innerText = `👀 H:${data.anchor_high.toFixed(2)} L:${data.anchor_low.toFixed(2)}`;
-                    sigStatus.style.color = 'var(--primary)';
+                } else if (data.status.includes('Pending Signal')) {
+                    sigStatus.innerText = `📋 Place Orders! H:${data.anchor_high.toFixed(2)} L:${data.anchor_low.toFixed(2)}`;
+                    sigStatus.style.color = '#f59e0b';
                 } else {
                     sigStatus.innerText = data.status;
                     sigStatus.style.color = 'var(--text-muted)';
@@ -398,7 +461,7 @@ async function pollStrategy() {
 
             if (indEl) {
                 if (data.status.includes('Triggered')) indEl.className = 'status-indicator triggered';
-                else if (data.status.includes('Watching')) indEl.className = 'status-indicator active';
+                else if (data.status.includes('Pending Signal')) indEl.className = 'status-indicator active';
                 else indEl.className = 'status-indicator';
             }
 
